@@ -7,7 +7,7 @@
 권장 Node.js: **22.23.4 LTS** (`.nvmrc`).
 
 ```powershell
-cd 'C:\Users\김장엽\Desktop\Yeop\VS Code\my-app\volleyball tournament'
+cd 'C:\Users\김장엽\Desktop\Yeop\VS Code\volleyball tournament'
 npm install
 ```
 
