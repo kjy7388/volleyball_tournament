@@ -8,23 +8,31 @@ import { planTeamsUpdate } from "../services/tournamentStorage";
 import { stageLabel } from "../utils/display";
 export default function TeamManager() {
   const { data, commit, notify } = useTournament();
+  const [base, setBase] = useState(data);
+  const [dirty, setDirty] = useState(false);
   const [teams, setTeams] = useState(() => structuredClone(data.teams));
   const [plan, setPlan] = useState(null);
   const [deletion, setDeletion] = useState(null);
   useEffect(() => {
-    setTeams(structuredClone(data.teams));
-  }, [data]);
-  const update = (id, fn) =>
+    if (!dirty) {
+      setTeams(structuredClone(data.teams));
+      setBase(data);
+    }
+  }, [data, dirty]);
+  const update = (id, fn) => {
+    setDirty(true);
     setTeams((old) => old.map((t) => (t.id === id ? fn(t) : t)));
+  };
   const counts = ["A", "B"].map(
     (g) => teams.filter((t) => t.group === g).length,
   );
   const valid = counts.every((n) => n === 3);
-  const save = () => {
+  const save = async () => {
     try {
-      const p = planTeamsUpdate(data, teams);
+      const p = planTeamsUpdate(base, teams);
       if (p.regrouped) setPlan(p);
-      else commit(p.data, "참가 반과 선수 명단을 저장했습니다.");
+      else if (await commit(p.data, "참가 반과 선수 명단을 저장했습니다."))
+        setDirty(false);
     } catch (e) {
       notify(e.message, "error");
     }
@@ -42,6 +50,23 @@ export default function TeamManager() {
           </button>
         }
       />
+      {dirty && base.revision !== data.revision && (
+        <div className="warning">
+          다른 관리자가 변경했습니다. 입력은 보관됩니다.{" "}
+          <button
+            onClick={() => {
+              if (
+                window.confirm(
+                  "입력 중인 내용을 버리고 최신 데이터를 불러올까요?",
+                )
+              )
+                setDirty(false);
+            }}
+          >
+            최신 데이터로 다시 편집
+          </button>
+        </div>
+      )}
       <div className={`assignment-summary ${valid ? "valid" : "invalid"}`}>
         {valid ? <CheckCircle2 size={21} /> : <AlertCircle size={21} />}
         <strong>{valid ? "조 편성 완료" : "조 편성 확인 필요"}</strong>
@@ -152,9 +177,17 @@ export default function TeamManager() {
           )}
           danger
           onClose={() => setPlan(null)}
-          onConfirm={() => {
-            if (commit(plan.data, "조 편성을 저장하고 대진을 재생성했습니다."))
+          onConfirm={async () => {
+            if (
+              await commit(
+                plan.data,
+                "조 편성을 저장하고 대진을 재생성했습니다.",
+                { acknowledgedMatchIds: plan.affected },
+              )
+            ) {
               setPlan(null);
+              setDirty(false);
+            }
           }}
         />
       )}

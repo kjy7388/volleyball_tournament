@@ -322,14 +322,13 @@ describe("저장 서비스", () => {
   });
   it("저장과 재로드", () => {
     const d = createDemoData();
-    tournamentStorage.save(d, 0);
+    store.set(STORAGE_KEY, JSON.stringify(d));
     expect(tournamentStorage.load()).toEqual(d);
   });
-  it("다른 탭의 변경을 덮어쓰지 않음", () => {
-    tournamentStorage.save({ ...createInitialData(), revision: 4 });
-    expect(() => tournamentStorage.save(createInitialData(), 0)).toThrow(
-      "다른 탭",
-    );
+  it("기존 localStorage에는 쓰기·초기화 기능을 제공하지 않음", () => {
+    expect(tournamentStorage.save).toBeUndefined();
+    expect(tournamentStorage.reset).toBeUndefined();
+    expect(tournamentStorage.load()).toBeNull();
   });
   it("손상된 원본을 유지하고 오류 표시", () => {
     store.set(STORAGE_KEY, "broken");

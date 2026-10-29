@@ -17,9 +17,14 @@ import { createDemoData } from "../services/tournamentStorage";
 import { createInitialData } from "../data/initialTournament";
 import { nextMatch } from "../utils/display";
 export default function AdminDashboard() {
-  const { data, commit, backup } = useTournament();
+  const { data, commit, backup, backupLegacy } = useTournament();
   const navigate = useNavigate();
   const [action, setAction] = useState(null);
+  const [actionBase, setActionBase] = useState(null);
+  const startAction = (value) => {
+    setActionBase(data);
+    setAction(value);
+  };
   const done = data.matches.filter((m) => m.status === "completed");
   const next = nextMatch(data);
   const recent = data.matches
@@ -119,8 +124,8 @@ export default function AdminDashboard() {
             <strong>{data.isDemo ? "데모 데이터" : "기본 운영 데이터"}</strong>{" "}
             · 데모는 9경기 결과와 우승 화면을 채웁니다.
             <br />
-            적용하거나 초기화하면 현재 데이터가 교체됩니다. 필요하면 먼저
-            백업하세요.
+            적용하거나 초기화하면 모든 사용자가 보는 공용 데이터가 교체됩니다.
+            먼저 백업하세요.
           </p>
         </div>
         <div className="button-row">
@@ -130,20 +135,23 @@ export default function AdminDashboard() {
           </button>
           <button
             className="button secondary"
-            onClick={() => setAction("demo")}
+            onClick={() => startAction("demo")}
           >
             <FlaskConical size={16} />
             데모 적용
           </button>
           <button
             className="button danger-outline"
-            onClick={() => setAction("reset")}
+            onClick={() => startAction("reset")}
           >
             <RotateCcw size={16} />
             초기화
           </button>
         </div>
       </section>
+      <button className="button secondary" onClick={backupLegacy}>
+        기존 localStorage 백업
+      </button>
       {action && (
         <ConfirmModal
           title={
@@ -155,18 +163,19 @@ export default function AdminDashboard() {
           danger
           confirmLabel={action === "demo" ? "데모로 교체" : "초기화"}
           onClose={() => setAction(null)}
-          onConfirm={() => {
+          onConfirm={async () => {
             if (
-              commit(
+              await commit(
                 {
                   ...(action === "demo"
                     ? createDemoData()
                     : createInitialData()),
-                  revision: data.revision,
+                  revision: actionBase.revision,
                 },
                 action === "demo"
                   ? "데모 데이터를 적용했습니다."
                   : "초기화했습니다.",
+                { acknowledgedMatchIds: actionBase.matches.map((m) => m.id) },
               )
             )
               setAction(null);

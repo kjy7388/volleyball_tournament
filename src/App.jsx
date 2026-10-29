@@ -12,6 +12,8 @@ import AdminDashboard from "./admin/AdminDashboard";
 import TeamManager from "./admin/TeamManager";
 import MatchManager from "./admin/MatchManager";
 import TournamentSettings from "./admin/TournamentSettings";
+import AdminGuard from "./admin/AdminGuard";
+import { TournamentGate } from "./components/DataState";
 export default function App() {
   const { pathname } = useLocation();
   const { data } = useTournament();
@@ -19,20 +21,26 @@ export default function App() {
     window.scrollTo(0, 0);
   }, [pathname]);
   useEffect(() => {
-    document.title = `${data.tournament.name} · 배구대회`;
-  }, [data.tournament.name]);
+    document.title = `${data?.tournament.name || "VOLLEYBALL CUP"} · 배구대회`;
+  }, [data?.tournament.name]);
   return (
     <Routes>
       <Route element={<Layout />}>
-        <Route index element={<Home />} />
-        <Route path="groups" element={<Groups />} />
-        <Route path="bracket" element={<Bracket />} />
-        <Route path="schedule" element={<Schedule />} />
-        <Route path="teams" element={<Teams />} />
-        <Route path="admin" element={<AdminDashboard />} />
-        <Route path="admin/teams" element={<TeamManager />} />
-        <Route path="admin/matches" element={<MatchManager />} />
-        <Route path="admin/settings" element={<TournamentSettings />} />
+        <Route element={<TournamentGate />}>
+          <Route index element={<Home />} />
+          <Route path="groups" element={<Groups />} />
+          <Route path="bracket" element={<Bracket />} />
+          <Route path="schedule" element={<Schedule />} />
+          <Route path="teams" element={<Teams />} />
+        </Route>
+        <Route path="admin" element={<AdminGuard />}>
+          <Route element={<TournamentGate />}>
+            <Route index element={<AdminDashboard />} />
+            <Route path="teams" element={<TeamManager />} />
+            <Route path="matches" element={<MatchManager />} />
+            <Route path="settings" element={<TournamentSettings />} />
+          </Route>
+        </Route>
         <Route path="*" element={<NotFound />} />
       </Route>
     </Routes>

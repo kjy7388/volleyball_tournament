@@ -9,6 +9,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { useTournament } from "../context/TournamentContext";
+import { useAuth } from "../context/AuthContext";
 const publicLinks = [
   ["/", "홈"],
   ["/groups", "조별리그"],
@@ -23,7 +24,8 @@ const adminLinks = [
   ["/admin/settings", "대회 설정", Settings],
 ];
 export default function Layout() {
-  const { data } = useTournament();
+  const { data, error, refresh, saving, connection, notify } = useTournament();
+  const { isAdmin, session, signOut } = useAuth();
   const { pathname } = useLocation();
   const admin = pathname.startsWith("/admin");
   return (
@@ -57,10 +59,26 @@ export default function Layout() {
         <div className="admin-banner">
           <div className="container">
             <ShieldCheck size={17} />
-            <span>개발용 관리자 모드</span>
+            <span>{isAdmin ? "인증된 관리자" : "관리자 로그인"}</span>
             <span className="subtle">
-              로그인 없이 사용 · 이 브라우저에만 저장됩니다
+              {isAdmin
+                ? session.user.email
+                : "등록된 관리자만 데이터 변경 가능"}
             </span>
+            {isAdmin && (
+              <button
+                className="button secondary logout-button"
+                onClick={async () => {
+                  try {
+                    await signOut();
+                  } catch (e) {
+                    notify(e.message, "error");
+                  }
+                }}
+              >
+                로그아웃
+              </button>
+            )}
           </div>
         </div>
       )}
@@ -85,8 +103,16 @@ export default function Layout() {
             </div>
           </aside>
         )}
-        <main>
-          <Outlet />
+        <main aria-busy={saving}>
+          {data && error && (
+            <div className="warning" role="alert">
+              {error} 현재 화면은 마지막 조회 결과입니다.{" "}
+              <button onClick={refresh}>다시 조회</button>
+            </div>
+          )}
+          <fieldset className="page-fieldset" disabled={saving}>
+            <Outlet />
+          </fieldset>
         </main>
       </div>
       <footer className="site-footer container">
@@ -95,8 +121,8 @@ export default function Layout() {
         </div>
         <span>하나의 팀, 함께 만드는 순간.</span>
         <small>
-          {data.isDemo ? "데모 데이터 모드" : "LOCAL PREVIEW"} · 브라우저 내
-          저장
+          {data?.isDemo ? "데모 데이터 모드" : "SUPABASE"} ·{" "}
+          {connection === "SUBSCRIBED" ? "실시간 갱신" : "주기적 갱신"}
         </small>
       </footer>
     </div>

@@ -140,35 +140,19 @@ export function validateData(d) {
     throw new Error("결선 대진 데이터가 이전 라운드 결과와 일치하지 않습니다.");
   return d;
 }
+// Legacy browser data is read only: explicit backup/import, never a cloud fallback.
 export const tournamentStorage = {
   load() {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return createInitialData();
+    if (!raw) return null;
     try {
       return validateData(JSON.parse(raw));
     } catch (e) {
       throw new Error(`데이터를 불러오지 못했습니다. ${e.message}`);
     }
   },
-  save(data, expectedRevision) {
-    validateData(data);
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (
-      raw &&
-      expectedRevision !== undefined &&
-      JSON.parse(raw).revision !== expectedRevision
-    )
-      throw new Error(
-        "다른 탭에서 데이터가 변경되었습니다. 새로고침 후 다시 저장해주세요.",
-      );
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-  },
   raw() {
     return localStorage.getItem(STORAGE_KEY) || "";
-  },
-  reset(data) {
-    validateData(data);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
   },
 };
 export function planMatchUpdate(data, id, sets, mode) {

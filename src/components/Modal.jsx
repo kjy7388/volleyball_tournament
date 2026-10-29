@@ -1,6 +1,8 @@
 import { useEffect, useRef } from "react";
 import { X, AlertTriangle } from "lucide-react";
+import { useTournament } from "../context/TournamentContext";
 export default function Modal({ title, children, onClose, wide = false }) {
+  const { saving } = useTournament();
   const ref = useRef(null);
   useEffect(() => {
     const previous = document.activeElement;
@@ -19,19 +21,25 @@ export default function Modal({ title, children, onClose, wide = false }) {
       aria-labelledby="modal-title"
       onCancel={(e) => {
         e.preventDefault();
-        onClose();
+        if (!saving) onClose();
       }}
       onClick={(e) => {
-        if (e.target === ref.current) onClose();
+        if (e.target === ref.current && !saving) onClose();
       }}
     >
-      <div className="modal-head">
-        <h2 id="modal-title">{title}</h2>
-        <button className="icon-button" onClick={onClose} aria-label="창 닫기">
-          <X size={22} />
-        </button>
-      </div>
-      {children}
+      <fieldset className="page-fieldset" disabled={saving}>
+        <div className="modal-head">
+          <h2 id="modal-title">{title}</h2>
+          <button
+            className="icon-button"
+            onClick={onClose}
+            aria-label="창 닫기"
+          >
+            <X size={22} />
+          </button>
+        </div>
+        {children}
+      </fieldset>
     </dialog>
   );
 }

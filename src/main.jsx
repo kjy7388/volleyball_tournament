@@ -2,6 +2,7 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 import { TournamentProvider } from "./context/TournamentContext";
+import { AuthProvider } from "./context/AuthContext";
 import App from "./App";
 import "./styles.css";
 class ErrorBoundary extends React.Component {
@@ -25,9 +26,11 @@ ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
     <ErrorBoundary>
       <BrowserRouter>
-        <TournamentProvider>
-          <App />
-        </TournamentProvider>
+        <AuthProvider>
+          <TournamentProvider>
+            <App />
+          </TournamentProvider>
+        </AuthProvider>
       </BrowserRouter>
     </ErrorBoundary>
   </React.StrictMode>,

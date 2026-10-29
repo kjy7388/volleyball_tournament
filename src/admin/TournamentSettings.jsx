@@ -5,16 +5,26 @@ import { PageTitle } from "../components/Common";
 import { stageLabel, teamLabel } from "../utils/display";
 export default function TournamentSettings() {
   const { data, commit, notify } = useTournament();
+  const [base, setBase] = useState(data);
+  const [dirty, setDirty] = useState(false);
   const [t, setT] = useState(() => structuredClone(data.tournament));
   const [matches, setMatches] = useState(() => structuredClone(data.matches));
   useEffect(() => {
-    setT(structuredClone(data.tournament));
-    setMatches(structuredClone(data.matches));
-  }, [data]);
-  const field = (key, value) => setT((old) => ({ ...old, [key]: value }));
-  const updateLocation = (key, value) =>
+    if (!dirty) {
+      setT(structuredClone(data.tournament));
+      setMatches(structuredClone(data.matches));
+      setBase(data);
+    }
+  }, [data, dirty]);
+  const field = (key, value) => {
+    setDirty(true);
+    setT((old) => ({ ...old, [key]: value }));
+  };
+  const updateLocation = (key, value) => {
+    setDirty(true);
     setT((old) => ({ ...old, locations: { ...old.locations, [key]: value } }));
-  const save = (e) => {
+  };
+  const save = async (e) => {
     e.preventDefault();
     if (!t.name.trim()) {
       notify("대회명을 입력해주세요.", "error");
@@ -41,20 +51,24 @@ export default function TournamentSettings() {
       );
       return;
     }
-    commit(
-      {
-        ...data,
-        tournament: { ...t, name: t.name.trim() },
-        matches: matches.map((m) => ({
-          ...m,
-          location:
-            m.location.trim() || t.locations[m.stage] || t.locations.default,
-        })),
-      },
-      "대회 설정과 일정을 저장했습니다.",
-    );
+    if (
+      await commit(
+        {
+          ...base,
+          tournament: { ...t, name: t.name.trim() },
+          matches: matches.map((m) => ({
+            ...m,
+            location:
+              m.location.trim() || t.locations[m.stage] || t.locations.default,
+          })),
+        },
+        "대회 설정과 일정을 저장했습니다.",
+      )
+    )
+      setDirty(false);
   };
   const applyLocations = () => {
+    setDirty(true);
     setMatches((old) =>
       old.map((m) => ({
         ...m,
@@ -64,7 +78,25 @@ export default function TournamentSettings() {
     notify("입력 중인 장소를 경기별 설정에 적용했습니다. 저장하면 반영됩니다.");
   };
   return (
-    <form onSubmit={save}>
+    <form onSubmit={save} onChange={() => setDirty(true)}>
+      {dirty && base.revision !== data.revision && (
+        <div className="warning">
+          다른 관리자가 변경했습니다. 입력은 보관됩니다.{" "}
+          <button
+            type="button"
+            onClick={() => {
+              if (
+                window.confirm(
+                  "입력 중인 내용을 버리고 최신 데이터를 불러올까요?",
+                )
+              )
+                setDirty(false);
+            }}
+          >
+            최신 데이터로 다시 편집
+          </button>
+        </div>
+      )}
       <PageTitle
         eyebrow="TOURNAMENT SETTINGS"
         title="대회 설정"

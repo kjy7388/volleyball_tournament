@@ -1,113 +1,81 @@
 # VOLLEYBALL CUP
 
-6개 반의 배구대회를 운영하는 독립적인 React + Vite 프로젝트입니다. JavaScript/JSX, React Router DOM, CSS, Lucide React를 사용합니다. 기존 MAD FC 프로젝트의 코드나 설정을 참조하지 않습니다.
+6개 반의 배구 토너먼트 운영 웹사이트입니다. React + Vite, JavaScript/JSX, React Router, Lucide React, Supabase Auth·PostgreSQL·Realtime을 사용합니다. 기존 홈·순위표·대진표·일정·선수·관리자 디자인과 경기 계산 로직을 유지했습니다.
 
-## 로컬 실행
+## 시작하기
 
-Node.js **22.23.4 LTS를 권장**합니다(`.nvmrc` 포함). 최종 빌드는 Node 22.23.4 및 24.22.2에서 검증했습니다. 의존성의 최소 요구 버전은 22.12 이상(22.x), 24.x 또는 26 이상입니다.
+권장 Node.js: **22.23.4 LTS** (`.nvmrc`).
 
 ```powershell
 cd 'C:\Users\김장엽\Desktop\Yeop\VS Code\my-app\volleyball tournament'
 npm install
-npm run dev
 ```
+
+1. [Supabase 설정 안내](docs/SUPABASE_SETUP.md)에 따라 SQL을 검토하고 직접 실행합니다.
+2. `.env.example`을 `.env.local`로 복사하고 실제 프로젝트 URL·Publishable Key를 직접 입력합니다. 서버 키는 사용하지 않습니다.
+3. Supabase Dashboard에서 Auth 사용자를 생성하고 관리자 등록 SQL에 실제 Auth User ID를 입력해 직접 실행합니다.
+4. `npm run dev`를 실행합니다. 환경변수 변경 후에는 서버를 다시 시작하세요.
 
 - 홈페이지: http://localhost:5173
 - 관리자: http://localhost:5173/admin
-- 서버는 로컬 주소 127.0.0.1에 바인딩합니다. `http://127.0.0.1:5173`으로도 접속할 수 있지만, **localhost와 127.0.0.1은 저장 공간이 다르므로 한 주소를 일관되게 사용하세요.**
-- 5173이 사용 중이면 다른 포트로 자동 변경하지 않고 오류를 표시합니다.
+- 설정이 없으면 안내 화면이 표시됩니다. 데이터는 자동으로 생성·삭제·덮어쓰기하지 않습니다.
+- DB가 비어 있으면 관리자 로그인 후 샘플 최초 등록 또는 기존 JSON 백업으로 최초 복원을 선택할 수 있습니다.
 
-## 화면과 운영 방법
+## SQL과 운영 문서
 
-| 경로              | 기능                                                   |
-| ----------------- | ------------------------------------------------------ |
-| `/`               | 대회 현황, 다음 경기, 최근 결과, 조별 선두, 최종 우승  |
-| `/groups`         | A·B조 순위 및 경기별 세트 결과                         |
-| `/bracket`        | PC 연결선 대진표 / 모바일 세로 대진표                  |
-| `/schedule`       | 날짜별 9경기, 상태·라운드 필터                         |
-| `/teams`          | 6개 반 선수 명단과 전체 경기 성적                      |
-| `/admin`          | 운영 현황, 최근 입력, 백업·데모·초기화                 |
-| `/admin/teams`    | 반 이름, 선수 추가·수정·삭제, 조 편성                  |
-| `/admin/matches`  | 세트 입력, 임시 저장, 결과 확정·수정, 동률 순위 확인   |
-| `/admin/settings` | 대회명, 기간, 기본·라운드·경기별 장소, 일정, 목표 점수 |
+| 파일                                                                 | 용도                                                                             |
+| -------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| [001_initial_schema.sql](supabase/migrations/001_initial_schema.sql) | 테이블, 제약, RLS, grants, 권한 확인, 조회·원자적 저장 RPC, Realtime publication |
+| [register_first_admin.sql](supabase/admin/register_first_admin.sql)  | 프로젝트 소유자가 실제 Auth UUID로 최초 관리자 등록                              |
+| [verify_permissions.sql](supabase/checks/verify_permissions.sql)     | 실제 프로젝트의 RLS·grants를 읽기 전용으로 점검                                  |
+| [.env.example](.env.example)                                         | 공개 환경변수 이름·예시                                                          |
+| [SUPABASE_SETUP.md](docs/SUPABASE_SETUP.md)                          | 백업·SQL 적용·계정 생성·환경변수·복원·실제 검증·Vercel·Push 전 점검              |
+| [TEST_RESULTS.md](docs/TEST_RESULTS.md)                              | 로컬 자동 검증 결과와 실제 원격 미검증 범위                                      |
 
-1. 반 관리에서 6개 반을 수정하고 A·B조에 각각 3개 반을 배정한 뒤 저장합니다. 반 이름·선수만 수정하면 결과를 유지합니다. 조 편성을 변경하면 확인 후 6개 예선 대진을 재생성하고 예선·결선 결과를 초기화합니다.
-2. 대회 설정에서 실제 연도와 시간을 입력합니다. 초기 11/24, 11/30, 12/1, 12/3, 12/11, 12/14 일정은 **연도·시간이 없는 예시**이며 실제 일정으로 취급하지 않습니다. 장소를 변경한 뒤 ‘위 장소를 모든 경기 설정에 적용’을 눌러 경기별 장소에도 반영하고 저장할 수 있습니다.
-3. 경기 관리에서 카드를 누르고 점수를 입력합니다. 임시 저장된 경기는 ‘진행 중’으로 표시하지만 순위에는 반영하지 않습니다. 임시 저장은 완성되지 않은 세트를 허용합니다. 최종 확정은 유효한 종료 점수와 3세트 승리가 모두 필요합니다.
-4. 양 조 6경기 결과와 순위가 확정되면 A1–B2, B1–A2 준결승이 배정됩니다. 준결승 승자들은 결승으로 진출하고 결승 승자를 홈에서 크게 표시합니다.
-5. 경기 카드는 일반 화면에서 상세 세트 점수를, 관리자 경기 관리에서는 점수 편집창을 엽니다.
+## 데이터와 권한
 
-### 테스트 데이터
+**Supabase가 유일한 대회 데이터 원본입니다.** 공용 데이터가 없거나 조회가 실패해도 localStorage를 원본으로 대체하지 않습니다. 기존 localStorage는 백업·명시적인 최초 복원용으로 읽기만 하며 삭제하지 않습니다. Auth의 브라우저 세션 저장은 별도로 유지합니다.
 
-초기는 1~6반, 반별 가상 선수 8명, 예정 상태 9경기입니다. `/admin` 하단 ‘데모 적용’ → 확인을 누르면 9경기의 확정 결과, 자동 진출, 1반 우승을 볼 수 있습니다. ‘초기화’ → 확인을 누르면 운영용 기본 데이터로 돌아갑니다. 두 작업은 현재 반·선수·설정·결과를 교체합니다. 필요하면 먼저 JSON 백업을 다운로드하세요. 백업은 보관용이며 현재 UI에는 가져오기 기능이 없습니다.
+일반 사용자는 로그인 없이 공개 데이터만 읽습니다. 로그인 계정 중 `tournament_admins`에 등록된 계정만 변경할 수 있습니다. 관리자 목록은 공개하지 않습니다. 직접 테이블 변경은 관리자에게도 허용하지 않으며, 전용 RPC가 서버 권한·점수·대진·확인된 초기화 목록을 검사하고 하나의 트랜잭션으로 저장합니다. 이전 revision은 비공개 감사 테이블에 보관합니다.
 
-## 핵심 규칙과 데이터 보호
+기본 규칙은 25·25·25·25·15점, 2점 차, 3세트 선승입니다. 미확정 경기는 순위에서 제외합니다. 동률은 승수 → 세트 득실 → 득실점 → 상대 전적 순으로 계산하고, 해소되지 않으면 관리자 확인을 요구합니다. 이전 결과 수정으로 결선에 영향이 생기면 확인 후 해당 기록을 초기화합니다. 최신 revision과 다르면 저장을 거부합니다.
 
-- 기본 1~4세트 25점, 5세트 15점, 2점 차, 3세트 선승입니다. 25:24, 26:23, 음수·소수·동점, 세트 건너뛰기, 선승 후 추가 세트는 확정할 수 없습니다. 실제 종료가 가능한 25:23, 26:24, 27:25 등만 허용합니다.
-- 순위는 승수 → 세트 득실차 → 득실점 차이 → 동률 팀 간 승수입니다. 3자 순환 등 해소 불가능한 동률은 임의로 확정하지 않습니다. 해당 조가 끝나면 경기 결과 관리에 수동 확인 UI가 나타납니다. 동률인 반들의 순서만 지정할 수 있습니다.
-- 결과 수정으로 진출 반이 바뀌거나 확정 경기를 임시 저장으로 바꾸면, 새 대진과 연결될 수 없는 하위 경기 기록을 확인창에 표시합니다. 확인 후 해당 기록을 초기화하는 하나의 저장 작업으로 반영합니다. 취소하면 기존 데이터가 유지됩니다. 진출 반이 그대로인 경우 결선 기록도 유지합니다.
-- 수동 동률 순위는 해당 조 점수를 수정하면 해제됩니다.
-- 점수가 저장된 경기는 당시 목표 점수를 `rulesSnapshot`으로 보존합니다. 설정 변경이 이미 진행·완료된 경기의 유효성을 바꾸지 않습니다.
-- 반 이름이 아닌 고유 ID로 선수·경기·승자를 연결합니다. 동일한 예선 대진과 선수 ID 중복을 검증합니다.
-- localStorage 키: `volleyball-cup:data:v1`. `schemaVersion: 1`로 버전을 관리합니다. 지원하지 않는 버전이나 손상 데이터는 자동 삭제하지 않고 백업·초기화 화면을 표시합니다. 향후 스키마 변경은 서비스에 명시적 마이그레이션을 추가하거나 백업 후 초기화해야 합니다.
-- 저장은 검증 후 한 번에 기록합니다. 저장 실패는 알림으로 안내하며 화면 데이터를 먼저 교체하지 않습니다. `revision` 검증으로 다른 탭의 변경이나 오래된 확인창의 저장이 최신 기록을 덮어쓰지 못하게 합니다.
+관리자 데모·초기화는 모든 사용자에게 보이는 DB를 변경하므로 반드시 백업하고 확인하세요. JSON 가져오기는 빈 DB에만 가능합니다. 이미 운영 데이터가 있으면 서버가 덮어쓰기를 거부합니다.
 
-## 저장 범위 및 관리자 보안
-
-관리자는 **개발용 모드**입니다. `/admin`은 인증 없이 접근할 수 있으며 실제 인증이나 접근 제어를 제공하지 않습니다. 프런트엔드 비밀번호는 없습니다.
-
-localStorage 데이터는 **같은 브라우저 프로필의 같은 출처(프로토콜·호스트·포트)** 에만 저장됩니다. 같은 출처의 탭은 저장 이벤트로 갱신됩니다. 다른 사용자·기기·브라우저와 실시간 동기화되지 않습니다. 브라우저 저장소를 지우면 데이터도 삭제됩니다. 시크릿 모드는 종료 시 사라질 수 있습니다. 인터넷이 없어도 기본 기능은 동작하고 Google Fonts는 시스템 글꼴로 대체됩니다.
+Realtime은 트랜잭션 마지막의 대회 revision 변경을 구독합니다. 연결 실패 시에도 페이지 진입, 포커스·온라인 복귀, 새로고침, 30초 주기 재조회가 동작합니다. 중복 요청과 오래된 응답의 역전 반영을 방지합니다.
 
 ## 코드 구조
 
-- `src/data/initialTournament.js`: 초기 데이터, 고유 ID, 예선 경기 생성
-- `src/utils/matchRules.js`: 세트 검증 및 유효한 확정 결과 판정
-- `src/utils/standings.js`: 순위·상대 전적·동률 처리
-- `src/utils/bracketLogic.js`: 결선 배정 및 영향을 받는 기록 초기화
-- `src/services/tournamentStorage.js`: 저장 검증, localStorage 접근, 수정 계획, 데모 생성
-- `src/context/TournamentContext.jsx`: 로드·저장 상태, 탭 갱신, 알림
-- `src/components/`: 내비게이션, 카드, 순위표, 대진표, 접근성 있는 모달
-- `src/pages/`, `src/admin/`: 일반 5개 및 관리자 4개 화면
-- `src/styles.css`: PC·태블릿·모바일 반응형 스타일
-- `src/utils/tournament.test.js`, `tests/app.spec.js`: 로직 및 실제 브라우저 테스트
+- `src/lib/supabaseClient.js`: 공개 환경변수 검사·클라이언트
+- `src/services/supabaseTournament.js`: Supabase 읽기·쓰기·구독, 오류 변환, 백업·가져오기
+- `src/services/tournamentStorage.js`: 기존 검증·수정 계획·데모, 읽기 전용 레거시 백업 접근
+- `src/context/AuthContext.jsx`: 세션·권한 확인·로그인·로그아웃
+- `src/context/TournamentContext.jsx`: 비동기 조회·저장·자동 갱신·알림
+- `src/admin/AdminGuard.jsx`, `src/components/DataState.jsx`: 인증·권한·연결·빈 데이터 UI
+- `src/utils/`: 기존 세트 검증·순위·대진 계산
+- `src/pages/`, `src/admin/`, `src/components/`, `src/styles.css`: 기존 화면 및 반응형 UI
+- `supabase/`: 사용자 검토·실행용 SQL
+- `src/**/*.test.js`, `tests/`: 로직·로컬 DB·브라우저 자동 테스트
 
-## 검증
+## 테스트와 빌드
 
-```bash
+```powershell
 npm test
 npm run build
-```
-
-이 PC의 기본 Node 24.13.0에서는 최종 재검증 중 빌드와 Playwright 프로세스가 Windows 종료 코드 `-1073740791`로 끝나는 현상이 관찰되었습니다. Node 22.23.4에서는 전체 검증이, 24.22.2에서는 빌드가 정상 완료되었습니다. 전역 Node 설치는 변경하지 않았습니다. 같은 현상이 있다면 권장 버전을 사용하거나, 전역 설치 변경 없이 아래 명령으로 검증할 수 있습니다.
-
-```bash
-npx --yes --package=node@22 node node_modules/vitest/vitest.mjs run
-npx --yes --package=node@22 node node_modules/vite/bin/vite.js build
-npx --yes --package=node@22 node node_modules/@playwright/test/cli.js test
-```
-
-최종 검증 결과: 로직 테스트 42개, Chrome 브라우저 테스트 10개 통과. 기본 브라우저 테스트에는 320·375·390·768·1024·1440px 화면 폭 검사가 포함됩니다. `npm audit` 기준 알려진 취약점은 0개였습니다.
-
-브라우저 테스트는 별도 터미널에서 `npm run dev`를 실행한 상태에서:
-
-```bash
 npm run test:e2e
 ```
 
-Playwright 설정은 이 PC에 설치된 Google Chrome을 사용합니다(`channel: 'chrome'`). Chrome이 없다면 설치하거나 Playwright 브라우저를 설치한 뒤 설정에서 채널을 변경하세요. 9경기 전체 입력, 잘못된 점수, 임시 저장 제외, 이전 결과 수정, 조 변경, 선수 관리, 설정, 초기화, 페이지 이동·새로고침, PC 1440px 및 모바일 390px 가로 넘침을 검증합니다. 테스트는 격리된 브라우저 문맥에서 실행되므로 사용자의 기본 브라우저 데이터는 바뀌지 않습니다.
+브라우저 테스트는 Google Chrome과 테스트용 5174 포트를 사용합니다. 테스트 전용 Auth/HTTP 모의 응답과 실제 로컬 PostgreSQL 엔진(PGlite)에서 SQL을 검증하며, 실제 Supabase나 사용자 브라우저 데이터에 접근하지 않습니다. 5173 개발 서버를 별도로 켜지 않아도 테스트 서버가 자동 실행됩니다. Node 24.13.0에서 종료 문제가 있으면 [설정 문서의 Node 22 명령](docs/SUPABASE_SETUP.md#8-로컬-자동-테스트와-실제-프로젝트-검증의-구분)을 사용하세요.
 
-## 향후 Supabase 연결
+## 배포 준비
 
-1. tournaments, teams, players, matches 테이블을 만들고 ID 기반 외래키를 설정합니다. 세트는 JSONB 또는 별도 match_sets 테이블로 저장할 수 있습니다.
-2. `tournamentStorage`의 읽기·저장을 비동기 Supabase 저장소로 교체하고 Context에 로딩·오류 처리를 확장합니다. 순위·점수·대진 유틸리티는 계속 사용할 수 있습니다.
-3. Supabase Auth와 서버에서 검증되는 관리자 역할 및 RLS를 추가합니다. 일반 사용자는 공개된 대회 정보만 읽고 관리 권한이 있는 계정만 변경하게 합니다. 선수 이름의 공개 범위도 운영 전에 결정합니다.
-4. 점수 검증·결과 확정·하위 대진 초기화를 서버 트랜잭션/RPC에서 다시 검증합니다. `revision`을 서버의 낙관적 동시성 제어로 바꾸고 필요하면 Realtime으로 사용자 화면을 갱신합니다.
-5. Vite 공개 환경 변수에는 프로젝트 URL과 공개 키만 넣고 서비스 역할 키는 브라우저에 넣지 않습니다.
+GitHub: https://github.com/kjy7388/volleyball_tournament
 
-## 향후 GitHub / Vercel
+Vercel 프로젝트 `volleyball-tournament`에서 Framework `Vite`, Build `npm run build`, Output `dist`, Node `22.x`와 아래 두 환경변수를 설정하면 됩니다.
 
-별도 GitHub Repository로 **이 폴더만** 등록하고 Vercel 프로젝트를 연결하세요. Framework는 Vite, Build Command는 `npm run build`, Output Directory는 `dist`입니다. `vercel.json`에 SPA 새로고침용 라우팅을 준비했습니다. 배포 전 Supabase 환경 변수, Auth 리디렉션 URL, RLS 및 실제 관리자 인증을 설정하세요. localStorage 모드 그대로 배포하면 사용자마다 서로 다른 대회를 보게 됩니다.
+```env
+VITE_SUPABASE_URL=
+VITE_SUPABASE_PUBLISHABLE_KEY=
+```
 
-GitHub 저장소: https://github.com/kjy7388/volleyball_tournament
-
-이 폴더만 독립 Git 저장소로 관리합니다. Vercel 배포는 아직 진행하지 않았습니다. `node_modules`, `dist`, `.env` 계열, `.vercel` 및 테스트 생성물은 커밋에서 제외합니다.
+`vercel.json`은 React Router 직접 접근·새로고침을 위한 SPA fallback을 유지합니다. 배포 전에 실제 프로젝트 RLS·관리자 권한·공개 선수 명단·Auth 설정을 확인하세요. 이번 2차 개발에서는 GitHub Commit/Push·Vercel 배포·원격 DB 변경을 실행하지 않았습니다. 기존 MAD FC 프로젝트는 수정하지 않습니다.

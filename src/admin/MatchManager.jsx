@@ -54,7 +54,7 @@ export default function MatchManager() {
       ))}
       {selected && (
         <ScoreEditor
-          key={`${selected}-${data.revision}`}
+          key={selected}
           match={data.matches.find((m) => m.id === selected)}
           onClose={() => setSelected(null)}
         />
@@ -66,6 +66,7 @@ function ScoreEditor({ match, onClose }) {
   const { data, commit, notify } = useTournament();
   const [sets, setSets] = useState(() => structuredClone(match.sets));
   const [plan, setPlan] = useState(null);
+  const [base] = useState(data);
   const rules = match.rulesSnapshot || data.tournament.setRules;
   const result = analyzeSets(sets, rules);
   const ready = match.homeTeamId && match.awayTeamId;
@@ -88,9 +89,9 @@ function ScoreEditor({ match, onClose }) {
       old.map((s, i) => (i === index ? { ...s, [side]: n } : s)),
     );
   };
-  const save = (mode) => {
+  const save = async (mode) => {
     try {
-      const p = planMatchUpdate(data, match.id, sets, mode);
+      const p = planMatchUpdate(base, match.id, sets, mode);
       if (
         mode === "confirm" ||
         p.affected.length ||
@@ -98,7 +99,10 @@ function ScoreEditor({ match, onClose }) {
       )
         setPlan({ ...p, mode });
       else if (
-        commit(p.data, "점수를 임시 저장했습니다. 순위에는 반영되지 않습니다.")
+        await commit(
+          p.data,
+          "점수를 임시 저장했습니다. 순위에는 반영되지 않습니다.",
+        )
       )
         onClose();
     } catch (e) {
@@ -112,6 +116,13 @@ function ScoreEditor({ match, onClose }) {
         title={`경기 ${String(match.number).padStart(2, "0")} · ${stageLabel(match)}`}
         onClose={onClose}
       >
+        {base.revision !== data.revision && (
+          <div className="warning">
+            다른 관리자가 변경했습니다. 입력은 보관됩니다. 창을 닫고 최신
+            데이터를 확인한 뒤 다시 입력해주세요. 이전 버전의 저장은 서버가
+            거부합니다.
+          </div>
+        )}
         <div className="editor-meta">
           <StatusBadge status={match.status} />
           <span>
@@ -274,13 +285,14 @@ function ScoreEditor({ match, onClose }) {
             plan.mode === "confirm" ? "결과 확정" : "임시 저장으로 변경"
           }
           onClose={() => setPlan(null)}
-          onConfirm={() => {
+          onConfirm={async () => {
             if (
-              commit(
+              await commit(
                 plan.data,
                 plan.mode === "confirm"
                   ? "경기 결과를 확정했습니다."
                   : "임시 저장했습니다.",
+                { acknowledgedMatchIds: [match.id, ...plan.affected] },
               )
             )
               onClose();
@@ -376,8 +388,13 @@ function TieResolver() {
           description="지정한 순위로 진출 반을 계산합니다. 점수를 수정하면 이 수동 확인은 해제됩니다."
           affected={plan.affected}
           onClose={() => setPlan(null)}
-          onConfirm={() => {
-            if (commit(plan.data, "동률 순위를 확정했습니다.")) setPlan(null);
+          onConfirm={async () => {
+            if (
+              await commit(plan.data, "동률 순위를 확정했습니다.", {
+                acknowledgedMatchIds: plan.affected,
+              })
+            )
+              setPlan(null);
           }}
         />
       )}

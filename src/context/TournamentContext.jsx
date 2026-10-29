@@ -1,95 +1,188 @@
-import { createContext, useContext, useEffect, useState } from "react";
-import { tournamentStorage, STORAGE_KEY } from "../services/tournamentStorage";
-import { createInitialData } from "../data/initialTournament";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
+import { useLocation } from "react-router-dom";
+import { supabase, configurationError } from "../lib/supabaseClient";
+import {
+  createSupabaseRepository,
+  downloadBackup,
+  backupLegacyData,
+} from "../services/supabaseTournament";
+import { useAuth } from "./AuthContext";
 const Context = createContext(null);
-export function TournamentProvider({ children }) {
+export function TournamentProvider({ children, client = supabase }) {
+  const { isAdmin, recheck } = useAuth();
+  const { pathname } = useLocation();
+  const repo = useRef(client ? createSupabaseRepository(client) : null).current;
   const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(!!client);
+  const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState(null);
-  const notify = (message, type = "success") =>
-    setToast({ message, type, id: Date.now() });
-  useEffect(() => {
-    try {
-      setData(tournamentStorage.load());
-    } catch (e) {
-      setError(e.message);
+  const [connection, setConnection] = useState("CONNECTING");
+  const dataRef = useRef(null);
+  const inFlight = useRef(null);
+  const savingRef = useRef(false);
+  const queued = useRef(false);
+  const generation = useRef(0);
+  const alive = useRef(true);
+  const notify = useCallback(
+    (message, type = "success") => setToast({ message, type, id: Date.now() }),
+    [],
+  );
+  const accept = useCallback((next) => {
+    if (!alive.current) return;
+    if (!dataRef.current || !next || next.revision > dataRef.current.revision) {
+      dataRef.current = next;
+      setData(next);
     }
   }, []);
-  useEffect(() => {
-    const update = (e) => {
-      if (e.key === STORAGE_KEY) {
-        try {
-          setData(tournamentStorage.load());
-          notify("다른 탭의 변경 사항을 불러왔습니다.");
-        } catch (e) {
-          setError(e.message);
-        }
+  const refresh = useCallback(async () => {
+    if (!repo) return;
+    if (savingRef.current) {
+      queued.current = true;
+      return;
+    }
+    if (inFlight.current) {
+      queued.current = true;
+      return inFlight.current;
+    }
+    const ticket = generation.current;
+    const promise = (async () => {
+      try {
+        const next = await repo.load();
+        if (ticket !== generation.current || !alive.current) return;
+        accept(next);
+        setError("");
+        setLoaded(true);
+      } catch (e) {
+        if (alive.current && ticket === generation.current) setError(e.message);
+      } finally {
+        if (alive.current) setLoading(false);
       }
+    })();
+    inFlight.current = promise;
+    await promise;
+    if (inFlight.current === promise) inFlight.current = null;
+    if (queued.current && !savingRef.current && alive.current) {
+      queued.current = false;
+      void refresh();
+    }
+  }, [repo, accept]);
+  useEffect(() => {
+    alive.current = true;
+    return () => {
+      alive.current = false;
     };
-    window.addEventListener("storage", update);
-    return () => window.removeEventListener("storage", update);
   }, []);
   useEffect(() => {
+    void refresh();
+  }, [refresh, pathname]);
+  useEffect(() => {
+    if (!repo) return;
+    let debounce;
+    const changed = () => {
+      clearTimeout(debounce);
+      debounce = setTimeout(() => void refresh(), 250);
+    };
+    const unsubscribe = repo.subscribe(changed, (status) => {
+      if (alive.current) setConnection(status);
+      if (status === "SUBSCRIBED") changed();
+    });
+    const focus = () => {
+      if (document.visibilityState === "visible") void refresh();
+    };
+    window.addEventListener("focus", focus);
+    window.addEventListener("online", focus);
+    document.addEventListener("visibilitychange", focus);
+    const timer = setInterval(focus, 30000);
+    return () => {
+      clearTimeout(debounce);
+      clearInterval(timer);
+      unsubscribe();
+      window.removeEventListener("focus", focus);
+      window.removeEventListener("online", focus);
+      document.removeEventListener("visibilitychange", focus);
+    };
+  }, [repo, refresh]);
+  useEffect(() => {
     if (!toast) return;
-    const timer = setTimeout(() => setToast(null), 5000);
+    const timer = setTimeout(() => setToast(null), 6000);
     return () => clearTimeout(timer);
   }, [toast]);
-  const commit = (next, message = "저장했습니다.", replace = false) => {
+  const commit = async (next, message = "저장했습니다.", options = {}) => {
+    if (!isAdmin || !repo) {
+      notify("관리자 로그인과 권한 확인이 필요합니다.", "error");
+      return false;
+    }
+    if (savingRef.current) return false;
+    savingRef.current = true;
+    setSaving(true);
+    generation.current++;
     try {
-      const saved = { ...next, revision: (next.revision || 0) + 1 };
-      if (replace) tournamentStorage.reset(saved);
-      else tournamentStorage.save(saved, next.revision);
-      setData(saved);
+      const saved = await repo.save(next, options);
+      accept(saved);
+      setLoaded(true);
       setError("");
       notify(message);
       return true;
     } catch (e) {
       notify(e.message, "error");
+      if (e.message.includes("관리자 권한") || e.message.includes("세션"))
+        recheck();
       return false;
+    } finally {
+      savingRef.current = false;
+      setSaving(false);
+      if (queued.current) {
+        queued.current = false;
+        void refresh();
+      }
     }
   };
   const backup = () => {
-    const url = URL.createObjectURL(
-      new Blob([tournamentStorage.raw()], { type: "application/json" }),
-    );
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "volleyball-backup.json";
-    a.click();
-    URL.revokeObjectURL(url);
+    try {
+      downloadBackup(dataRef.current);
+    } catch (e) {
+      notify(e.message, "error");
+    }
   };
-  if (error)
-    return (
-      <main className="recovery panel">
-        <h1>저장 데이터를 확인해주세요</h1>
-        <p>{error}</p>
-        <p>
-          원본은 그대로 보관되어 있습니다. 먼저 백업을 다운로드할 수 있습니다.
-        </p>
-        <button onClick={backup}>원본 백업 다운로드</button>{" "}
-        <button
-          onClick={() => {
-            if (
-              window.confirm(
-                "저장 데이터를 삭제하고 초기 데이터로 바꾸시겠습니까?",
-              )
-            )
-              commit(createInitialData(), "초기화했습니다.", true);
-          }}
-        >
-          확인 후 초기화
-        </button>
-      </main>
-    );
-  if (!data)
-    return (
-      <main className="loading" role="status">
-        대회 정보를 불러오는 중…
-      </main>
-    );
+  const backupLegacy = () => {
+    try {
+      backupLegacyData();
+    } catch (e) {
+      notify(e.message, "error");
+    }
+  };
   return (
-    <Context.Provider value={{ data, commit, notify, backup }}>
+    <Context.Provider
+      value={{
+        data,
+        error,
+        loading,
+        loaded,
+        saving,
+        connection,
+        configurationError: client ? "" : configurationError,
+        refresh,
+        commit,
+        notify,
+        backup,
+        backupLegacy,
+      }}
+    >
       {children}
+      {saving && (
+        <div className="saving-indicator" role="status">
+          Supabase에 저장 중…
+        </div>
+      )}
       {toast && (
         <div
           role={toast.type === "error" ? "alert" : "status"}
