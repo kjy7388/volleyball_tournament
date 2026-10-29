@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/((?!assets/|volleyball.svg).*)",
+      "destination": "/index.html"
+    }
+  ]
+}

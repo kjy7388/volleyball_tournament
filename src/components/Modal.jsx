@@ -1,0 +1,73 @@
+import { useEffect, useRef } from "react";
+import { X, AlertTriangle } from "lucide-react";
+export default function Modal({ title, children, onClose, wide = false }) {
+  const ref = useRef(null);
+  useEffect(() => {
+    const previous = document.activeElement;
+    const old = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    ref.current.showModal();
+    return () => {
+      document.body.style.overflow = old;
+      previous?.focus();
+    };
+  }, []);
+  return (
+    <dialog
+      ref={ref}
+      className={`modal ${wide ? "wide" : ""}`}
+      aria-labelledby="modal-title"
+      onCancel={(e) => {
+        e.preventDefault();
+        onClose();
+      }}
+      onClick={(e) => {
+        if (e.target === ref.current) onClose();
+      }}
+    >
+      <div className="modal-head">
+        <h2 id="modal-title">{title}</h2>
+        <button className="icon-button" onClick={onClose} aria-label="창 닫기">
+          <X size={22} />
+        </button>
+      </div>
+      {children}
+    </dialog>
+  );
+}
+export function ConfirmModal({
+  title = "변경 사항을 확인해주세요",
+  description,
+  affected = [],
+  onConfirm,
+  onClose,
+  confirmLabel = "확인 후 저장",
+  danger = false,
+}) {
+  return (
+    <Modal title={title} onClose={onClose}>
+      <div className={`confirm-symbol ${danger ? "danger" : ""}`}>
+        <AlertTriangle size={26} />
+      </div>
+      <p className="confirm-description">{description}</p>
+      {affected.length > 0 && (
+        <div className="warning">
+          <strong>다음 경기의 점수와 확정 결과가 초기화됩니다.</strong>
+          <p>{affected.join(", ")}</p>
+          <p>새 대진에서 점수를 다시 입력해야 합니다.</p>
+        </div>
+      )}
+      <div className="modal-actions">
+        <button className="button secondary" onClick={onClose}>
+          취소
+        </button>
+        <button
+          className={`button ${danger ? "danger-button" : ""}`}
+          onClick={onConfirm}
+        >
+          {confirmLabel}
+        </button>
+      </div>
+    </Modal>
+  );
+}

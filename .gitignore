@@ -1,0 +1,15 @@
+node_modules/
+dist/
+.vercel/
+test-results/
+playwright-report/
+*.log
+.env
+.env.local
+.env.*.local
+.env*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
