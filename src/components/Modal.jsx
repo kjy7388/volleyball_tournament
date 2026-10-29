@@ -1,17 +1,27 @@
 import { useEffect, useRef } from "react";
 import { X, AlertTriangle } from "lucide-react";
 import { useTournament } from "../context/TournamentContext";
+import { acquireScrollLock } from "../utils/scrollLock";
 export default function Modal({ title, children, onClose, wide = false }) {
   const { saving } = useTournament();
   const ref = useRef(null);
   useEffect(() => {
-    const previous = document.activeElement;
-    const old = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    ref.current.showModal();
+    const dialog = ref.current;
+    const previous = dialog.ownerDocument.activeElement;
+    const release = acquireScrollLock(dialog.ownerDocument);
+    try {
+      dialog.showModal();
+    } catch (error) {
+      release();
+      throw error;
+    }
     return () => {
-      document.body.style.overflow = old;
-      previous?.focus();
+      try {
+        if (dialog.open) dialog.close();
+      } finally {
+        release();
+        if (previous?.isConnected) previous.focus({ preventScroll: true });
+      }
     };
   }, []);
   return (

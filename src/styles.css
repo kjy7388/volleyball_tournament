@@ -251,6 +251,10 @@ label select {
   align-self: stretch;
   margin: auto;
 }
+.public-header .public-nav {
+  margin-left: auto;
+  margin-right: 0;
+}
 .public-nav a {
   position: relative;
   display: flex;
@@ -2300,6 +2304,10 @@ td:last-child {
   }
 }
 @media (max-width: 850px) {
+  .public-header .brand {
+    margin-left: auto;
+    margin-right: auto;
+  }
   .header-inner {
     height: auto;
     min-height: 82px;

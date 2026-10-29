@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, Outlet } from "react-router-dom";
+import { Outlet } from "react-router-dom";
 import { useTournament } from "../context/TournamentContext";
 import { useAuth } from "../context/AuthContext";
 import { createInitialData } from "../data/initialTournament";
@@ -70,7 +70,7 @@ function InitializeTournament() {
         <button className="button secondary" onClick={backupLegacy}>
           기존 localStorage 백업
         </button>
-        {isAdmin ? (
+        {isAdmin && (
           <>
             <button
               className="button"
@@ -88,10 +88,6 @@ function InitializeTournament() {
               />
             </label>
           </>
-        ) : (
-          <Link className="button" to="/admin">
-            관리자 로그인
-          </Link>
         )}
       </div>
       <p className="muted">

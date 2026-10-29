@@ -31,7 +31,7 @@ export default function Layout() {
   return (
     <div className={admin ? "app admin-app" : "app"}>
       <header className="site-header">
-        <div className="header-inner">
+        <div className={`header-inner${admin ? "" : " public-header"}`}>
           <Link className="brand" to="/" aria-label="VOLLEYBALL CUP 홈">
             <img src="/volleyball.svg" alt="" />
             <span>
@@ -46,13 +46,12 @@ export default function Layout() {
               </NavLink>
             ))}
           </nav>
-          <Link
-            className={`admin-link ${admin ? "selected" : ""}`}
-            to={admin ? "/" : "/admin"}
-          >
-            {admin ? <ArrowUpRight size={15} /> : <ShieldCheck size={15} />}
-            <span>{admin ? "대회 홈페이지" : "관리자"}</span>
-          </Link>
+          {admin && (
+            <Link className="admin-link selected" to="/">
+              <ArrowUpRight size={15} />
+              <span>대회 홈페이지</span>
+            </Link>
+          )}
         </div>
       </header>
       {admin && (
