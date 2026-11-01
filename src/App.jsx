@@ -14,15 +14,16 @@ import MatchManager from "./admin/MatchManager";
 import TournamentSettings from "./admin/TournamentSettings";
 import AdminGuard from "./admin/AdminGuard";
 import { TournamentGate } from "./components/DataState";
+import { INTRO_TITLE } from "./components/TournamentIntro";
 export default function App() {
   const { pathname } = useLocation();
-  const { data, sport } = useTournament();
+  const { sport } = useTournament();
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [pathname]);
   useEffect(() => {
-    document.title = `${data?.tournament.name || sport.name} · ${sport.label}대회`;
-  }, [data?.tournament.name, sport]);
+    document.title = INTRO_TITLE;
+  }, [sport]);
   return (
     <Routes>
       {["", "groups", "bracket", "schedule", "teams"].map((path) => (

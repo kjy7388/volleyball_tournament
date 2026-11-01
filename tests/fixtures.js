@@ -37,6 +37,15 @@ export const test = base.extend({
         ),
       );
       await db.exec(
+        readFileSync(
+          new URL(
+            "../supabase/migrations/003_volleyball_no_deuce.sql",
+            import.meta.url,
+          ),
+          "utf8",
+        ),
+      );
+      await db.exec(
         `insert into public.tournament_admins(user_id) values('${adminId}');`,
       );
       let chain = Promise.resolve();
@@ -158,6 +167,12 @@ export const test = base.extend({
                 if (name === "is_tournament_admin")
                   return (
                     await db.query("select public.is_tournament_admin() data")
+                  ).rows[0].data;
+                if (name === "get_volleyball_scoring_version")
+                  return (
+                    await db.query(
+                      "select public.get_volleyball_scoring_version() data",
+                    )
                   ).rows[0].data;
                 if (name === "get_sports_schema_version")
                   return (

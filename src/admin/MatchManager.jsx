@@ -177,6 +177,7 @@ function ScoreEditor({ match, onClose }) {
             ) : (
               <VolleyballScoreEditor
                 {...{ sets, terminalAt, data, match, rules, change }}
+                setStates={result.setStates}
               />
             )}
             {result.errors.length > 0 && (
@@ -205,11 +206,12 @@ function ScoreEditor({ match, onClose }) {
             <p className="muted small-text">
               {dodgeball
                 ? "먼저 3판 승리 · 미진행 판은 승리 반을 선택하지 않습니다."
-                : "최소 2점 차 · 먼저 3세트 승리 · 임시 점수는 완성되지 않아도 저장할 수 있습니다."}
+                : "듀스 없음 · 목표 점수 선취(1점 차 허용) · 먼저 3세트 승리. 진행 중인 점수는 임시 저장할 수 있습니다."}
             </p>
             <div className="modal-actions">
               <button
                 className="button secondary"
+                disabled={!dodgeball && result.draftErrors.length > 0}
                 onClick={() => save("draft")}
               >
                 <Save size={17} />

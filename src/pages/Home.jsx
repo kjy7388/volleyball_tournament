@@ -46,11 +46,7 @@ export default function Home() {
                 <Trophy className="inline-trophy" />
               </>
             ) : (
-              <>
-                <span>하나의 팀,</span>
-                <br />
-                우리의 <em>승부.</em>
-              </>
+              <>{sport.label} 대회 현황</>
             )}
           </h1>
           <p>

@@ -3400,3 +3400,102 @@ td:last-child {
     justify-self: end;
   }
 }
+
+/* One shared introduction across both sports and admin/public routes. */
+.groups-columns > section {
+  min-width: 0;
+}
+.brand {
+  white-space: normal;
+  align-items: flex-start;
+  font-family: "Noto Sans KR", sans-serif;
+}
+.brand img {
+  flex: 0 0 auto;
+  margin-top: 8px;
+}
+.brand > .tournament-intro {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  min-width: 0;
+}
+.tournament-intro .intro-label {
+  font:
+    800 12px "Barlow Condensed",
+    sans-serif;
+  letter-spacing: 1.8px;
+  color: #718199;
+}
+.tournament-intro .intro-title {
+  display: block;
+  color: var(--navy);
+  font-size: clamp(32px, 2.7vw, 38px);
+  line-height: 1.5;
+  letter-spacing: -1.2px;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+.tournament-intro .intro-subtitle {
+  font-size: 15px;
+  font-weight: 600;
+  color: #65758d;
+  letter-spacing: 0;
+}
+.tournament-intro .intro-slogan {
+  font:
+    800 10px "Noto Sans KR",
+    sans-serif;
+  letter-spacing: 0.6px;
+  color: var(--blue);
+}
+.hero .hero-copy h1 {
+  font-size: 30px;
+  line-height: 1.4;
+}
+@media (max-width: 850px) {
+  .brand > .tournament-intro {
+    text-align: center;
+  }
+  .tournament-intro .intro-title {
+    font-size: clamp(24px, 3.6vw, 30px);
+  }
+  .tournament-intro .intro-subtitle {
+    font-size: 13px;
+  }
+  .tournament-intro .intro-slogan {
+    font-size: 9px;
+    letter-spacing: 0.15px;
+  }
+  .hero .hero-copy h1 {
+    font-size: 23px;
+  }
+}
+@media (max-width: 380px) {
+  .brand {
+    gap: 8px;
+  }
+  .brand img {
+    width: 28px;
+    height: 28px;
+  }
+  .tournament-intro .intro-title {
+    font-size: 24px;
+  }
+}
+
+/* Stack the mobile logo and copy on the same full-width center axis. */
+@media (max-width: 600px) {
+  .header-inner .brand {
+    width: 100%;
+    flex-direction: column;
+    align-items: center;
+  }
+  .header-inner .brand img {
+    margin-top: 0;
+  }
+  .header-inner .brand > .tournament-intro {
+    width: 100%;
+    text-align: center;
+  }
+}

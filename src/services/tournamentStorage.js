@@ -127,6 +127,22 @@ export function validateData(d) {
         ))
     )
       throw new Error("조별 대진이 조 편성과 일치하지 않습니다.");
+    if (!dodgeball) {
+      if (
+        m.rulesSnapshot != null &&
+        (!Array.isArray(m.rulesSnapshot) ||
+          m.rulesSnapshot.length !== 5 ||
+          m.rulesSnapshot.some((n) => !Number.isInteger(n) || n < 2 || n > 999))
+      )
+        throw new Error("경기 목표 점수 기록이 올바르지 않습니다.");
+      const analysis = analyzeSets(
+        m.sets,
+        m.rulesSnapshot || d.tournament.setRules,
+      );
+      if (analysis.draftErrors.length) throw new Error(analysis.draftErrors[0]);
+      if (m.status === "scheduled" && hasResultInput(m))
+        throw new Error("예정 경기에 점수가 입력되어 있습니다.");
+    }
     if (m.status === "completed") {
       const r = dodgeball
         ? analyzeRounds(m.rounds)
@@ -223,6 +239,8 @@ export function planMatchUpdate(data, id, sets, mode) {
   const result = dodgeball
     ? analyzeRounds(normalized)
     : analyzeSets(normalized, rules);
+  if (!dodgeball && result.draftErrors.length)
+    throw new Error(result.draftErrors[0]);
   if (dodgeball && result.errors.length) throw new Error(result.errors[0]);
   if (mode === "confirm" && !result.complete)
     throw new Error(

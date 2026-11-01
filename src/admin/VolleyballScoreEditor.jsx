@@ -6,6 +6,7 @@ export default function VolleyballScoreEditor({
   match,
   rules,
   change,
+  setStates,
 }) {
   return (
     <div className="score-input-table">
@@ -24,13 +25,17 @@ export default function VolleyballScoreEditor({
           >
             <div>
               <strong>{i + 1}세트</strong>
-              <small>{disabled ? "승부 결정" : `${rules[i]}점제`}</small>
+              <small>
+                {disabled
+                  ? "승부 결정"
+                  : `${rules[i]}점 선취 · ${setStates?.[i] === "completed" ? "종료 가능" : setStates?.[i] === "in_progress" ? "진행 중" : setStates?.[i] === "invalid" ? "입력 확인" : "미진행"}`}
+              </small>
             </div>
             <input
               type="number"
               inputMode="numeric"
               min="0"
-              max="9999"
+              max={rules[i]}
               step="1"
               aria-label={`${i + 1}세트 ${teamLabel(data, match, "home")} 점수`}
               value={s.home}
@@ -47,7 +52,7 @@ export default function VolleyballScoreEditor({
               type="number"
               inputMode="numeric"
               min="0"
-              max="9999"
+              max={rules[i]}
               step="1"
               aria-label={`${i + 1}세트 ${teamLabel(data, match, "away")} 점수`}
               value={s.away}

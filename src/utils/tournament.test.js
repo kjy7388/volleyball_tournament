@@ -26,9 +26,9 @@ const rank = (d, g = "A") =>
 describe("세트 규칙", () => {
   it.each([
     [25, 23, true],
-    [25, 24, false],
-    [26, 24, true],
-    [27, 25, true],
+    [25, 24, true],
+    [26, 24, false],
+    [27, 25, false],
     [26, 23, false],
     [24, 22, false],
     [25, 0, true],
@@ -40,13 +40,13 @@ describe("세트 규칙", () => {
   ])("%s:%s 점수 검증", (home, away, valid) =>
     expect(analyzeSets([{ home, away }]).errors.length === 0).toBe(valid),
   );
-  it("5세트 목표 15점과 듀스 판정", () => {
+  it("5세트 목표 15점 선취와 1점 차 승리", () => {
     const sets = [
       { home: 25, away: 20 },
       { home: 20, away: 25 },
       { home: 25, away: 20 },
       { home: 20, away: 25 },
-      { home: 17, away: 15 },
+      { home: 15, away: 14 },
     ];
     expect(analyzeSets(sets)).toMatchObject({
       complete: true,
@@ -299,7 +299,7 @@ describe("기록 수정과 무결성", () => {
   });
   it("중복 경기와 잘못된 확정 점수 거부", () => {
     const d = createDemoData();
-    d.matches[0].sets[0] = { home: 25, away: 24 };
+    d.matches[0].sets[0] = { home: 26, away: 24 };
     expect(() => validateData(d)).toThrow();
     const b = createInitialData();
     b.matches[1].homeTeamId = b.matches[0].homeTeamId;

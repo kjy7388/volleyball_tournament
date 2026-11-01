@@ -8,7 +8,9 @@
     "build": "vite build",
     "preview": "vite preview --host 127.0.0.1",
     "test": "vitest run",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "test:simulation": "playwright test --config=playwright.simulation.config.js",
+    "test:production": "playwright test --config=playwright.production.config.js"
   },
   "engines": {
     "node": "^22.12.0 || ^24.0.0 || >=26.0.0"

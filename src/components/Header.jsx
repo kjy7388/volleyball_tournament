@@ -11,6 +11,7 @@ import {
 import { useTournament } from "../context/TournamentContext";
 import { useAuth } from "../context/AuthContext";
 import SportSelector from "./SportSelector";
+import TournamentIntro, { INTRO_TITLE } from "./TournamentIntro";
 const publicLinks = [
   ["/", "홈"],
   ["/groups", "조별리그"],
@@ -37,13 +38,10 @@ export default function Layout() {
           <Link
             className="brand"
             to={`/${sport.key}`}
-            aria-label="SPORTS TOURNAMENT 홈"
+            aria-label={`${INTRO_TITLE} 홈`}
           >
             <img src="/volleyball.svg" alt="" />
-            <span>
-              SPORTS<span className="brand-light"> TOURNAMENT</span>
-              <small>CLASS TOGETHER. PLAY TOGETHER.</small>
-            </span>
+            <TournamentIntro />
           </Link>
           <SportSelector />
           <nav className="public-nav" aria-label="주 메뉴">

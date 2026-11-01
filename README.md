@@ -6,6 +6,8 @@
 
 현재 기존 프로젝트에는 사용자가 002 적용을 완료했습니다. 배포 전 읽기 전용 확인에서도 DB 버전 2와 배구·피구 각각 6개 반·9경기 조회를 확인했습니다. 이 프로젝트에서 001·002를 다시 실행하거나 데이터를 초기화할 필요는 없습니다. 아래 SQL 설정 절차는 아직 통합하지 않은 별도 환경을 위한 안내입니다.
 
+**배구는 듀스 없이 목표 점수 선취 방식입니다.** [변경·검증·003 적용 안내](docs/NO_DEUCE_UPDATE.md)를 확인하세요. 사용자가 기존 운영 DB에 003 적용을 완료했으며, 2026-11-01 Data API에서 배구 규칙 버전 3·통합 버전 2를 확인했습니다. 이미 적용된 001·002·003은 다시 실행하지 않습니다. 서버 규칙 버전 3이 확인되지 않는 환경에서는 배구 저장을 차단하며, 피구 저장에는 영향이 없습니다.
+
 ## 시작하기
 
 권장 Node.js: **22.23.4 LTS** (`.nvmrc`).
@@ -15,7 +17,7 @@ cd 'C:\Users\김장엽\Desktop\Yeop\VS Code\volleyball tournament'
 npm install
 ```
 
-1. 기존 DB는 [통합 전환 안내](docs/MULTI_SPORT_UPGRADE.md)를 따릅니다. 완전히 빈 새 테스트 DB만 001→002 순서로 설정합니다.
+1. 기존 DB는 [003 적용 안내](docs/NO_DEUCE_UPDATE.md)를 따릅니다. 완전히 빈 새 테스트 DB만 001→002→003 순서로 설정합니다.
 2. `.env.example`을 `.env.local`로 복사하고 실제 프로젝트 URL·Publishable Key를 직접 입력합니다. 서버 키는 사용하지 않습니다.
 3. 기존 관리자 계정을 그대로 사용합니다. 새 테스트 DB에서만 [설정 안내](docs/SUPABASE_SETUP.md)에 따라 최초 관리자를 등록합니다.
 4. `npm run dev`를 실행합니다. 환경변수 변경 후에는 서버를 다시 시작하세요.
@@ -32,6 +34,8 @@ npm install
 | -------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
 | [001_initial_schema.sql](supabase/migrations/001_initial_schema.sql) | 테이블, 제약, RLS, grants, 권한 확인, 조회·원자적 저장 RPC, Realtime publication |
 | [002_multi_sport_tournament.sql](supabase/migrations/002_multi_sport_tournament.sql) | 기존 DB의 배구 기록·계정 보존, 피구 판 결과 및 종목별 저장 확장 |
+| [003_volleyball_no_deuce.sql](supabase/migrations/003_volleyball_no_deuce.sql) | 배구 목표 점수 선취 검증, 기존 비호환 기록 발견 시 전체 적용 중단 |
+| [volleyball_no_deuce_preflight.sql](supabase/checks/volleyball_no_deuce_preflight.sql) | 003 전 실제 함수 정의·권한·점수 충돌 읽기 전용 점검 |
 | [multi_sport_preflight.sql](supabase/checks/multi_sport_preflight.sql) | 적용 전 스키마·정책·함수·Revision 읽기 전용 점검 |
 | [MULTI_SPORT_UPGRADE.md](docs/MULTI_SPORT_UPGRADE.md) | 종목별 구조, 백업, SQL 승인·이전·실제 검증·배포 절차 |
 | [register_first_admin.sql](supabase/admin/register_first_admin.sql)  | 프로젝트 소유자가 실제 Auth UUID로 최초 관리자 등록                              |
@@ -46,7 +50,7 @@ npm install
 
 일반 사용자는 로그인 없이 공개 데이터만 읽습니다. 로그인 계정 중 `tournament_admins`에 등록된 계정만 변경할 수 있습니다. 관리자 목록은 공개하지 않습니다. 직접 테이블 변경은 관리자에게도 허용하지 않으며, 전용 RPC가 서버 권한·점수·대진·확인된 초기화 목록을 검사하고 하나의 트랜잭션으로 저장합니다. 이전 revision은 비공개 감사 테이블에 보관합니다.
 
-기본 규칙은 25·25·25·25·15점, 2점 차, 3세트 선승입니다. 미확정 경기는 순위에서 제외합니다. 동률은 승수 → 세트 득실 → 득실점 → 상대 전적 순으로 계산하고, 해소되지 않으면 관리자 확인을 요구합니다. 이전 결과 수정으로 결선에 영향이 생기면 확인 후 해당 기록을 초기화합니다. 최신 revision과 다르면 저장을 거부합니다.
+배구 기본 규칙은 25·25·25·25·15점 선취, 듀스 없음, 3세트 선승입니다. 한쪽만 목표 점수에 정확히 도달하고 상대는 목표 미만이어야 합니다. 25:24·15:14는 유효하고 26:24·16:14는 거부합니다. 24:24·14:14는 진행 중인 임시 점수로만 저장할 수 있습니다. 미확정 경기는 순위에서 제외합니다. 동률은 승수 → 세트 득실 → 득실점 → 상대 전적 순으로 계산하고, 해소되지 않으면 관리자 확인을 요구합니다. 이전 결과 수정으로 결선에 영향이 생기면 확인 후 해당 기록을 초기화합니다. 최신 revision과 다르면 저장을 거부합니다.
 
 피구는 숫자 점수 대신 각 판의 승리 반만 선택하는 5판 3선승제입니다. 순위는 승수 → 판 득실 → 상대 전적 → 동률 집단 내 관리자 확정 순입니다. 종목별 선수·조 편성·결과·Revision·데모·초기화는 독립적입니다. 종목 전환 전 미저장 편집을 저장하세요.
 
@@ -88,4 +92,4 @@ VITE_SUPABASE_URL=
 VITE_SUPABASE_PUBLISHABLE_KEY=
 ```
 
-`vercel.json`은 React Router 직접 접근·새로고침을 위한 SPA fallback을 유지합니다. 배포 전에 실제 프로젝트 RLS·관리자 권한·공개 선수 명단·Auth 설정을 확인하세요. 이번 2차 개발에서는 GitHub Commit/Push·Vercel 배포·원격 DB 변경을 실행하지 않았습니다. 기존 MAD FC 프로젝트는 수정하지 않습니다.
+`vercel.json`은 React Router 직접 접근·새로고침을 위한 SPA fallback을 유지합니다. 배포 전에 실제 프로젝트 RLS·관리자 권한·공개 선수 명단·Auth 설정을 확인하세요. 운영 배포는 기존 저장소 main의 Push에 연결된 기존 Vercel 프로젝트를 사용합니다. SQL은 자동 재실행하지 않으며 기존 MAD FC 프로젝트는 수정하지 않습니다.

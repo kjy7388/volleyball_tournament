@@ -66,12 +66,13 @@ test("유효하지 않은 점수는 확정 불가 / 임시 저장은 순위에�
   await page.locator(".match-card").first().click();
   const d = page.locator("dialog");
   const first = d.locator(".score-input-row").first().locator("input");
-  await first.nth(0).fill("25");
+  await first.nth(0).fill("26");
   await first.nth(1).fill("24");
   await expect(
     d.getByRole("button", { name: "경기 결과 확정" }),
   ).toBeDisabled();
-  await expect(d.locator(".validation-errors")).toContainText("2점 차");
+  await expect(d.locator(".validation-errors")).toContainText("목표");
+  await first.nth(0).fill("24");
   await d.getByRole("button", { name: "임시 저장", exact: true }).click();
   await page.goto("/groups");
   await expect(

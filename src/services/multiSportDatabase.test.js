@@ -47,6 +47,7 @@ beforeAll(async () => {
   legacy = await save(createDemoData(), true);
   await as("postgres", "");
   await db.exec(sql("002_multi_sport_tournament.sql"));
+  await db.exec(sql("003_volleyball_no_deuce.sql"));
   await as();
 }, 60000);
 afterAll(async () => {

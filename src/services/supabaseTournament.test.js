@@ -51,7 +51,10 @@ describe("Supabase 구성·저장 어댑터", () => {
   it("저장은 서버 응답을 기다리고 서버 revision 반환", async () => {
     const initial = createInitialData();
     const response = { ...initial, revision: 7 };
-    const rpc = vi.fn().mockResolvedValue({ data: response, error: null });
+    const rpc = vi.fn(async (name) => ({
+      data: name === "get_volleyball_scoring_version" ? 3 : response,
+      error: null,
+    }));
     const saved = await createSupabaseRepository({ rpc }).save(initial, {
       acknowledgedMatchIds: ["final"],
     });
@@ -67,7 +70,10 @@ describe("Supabase 구성·저장 어댑터", () => {
   });
   it("최초 등록은 expected revision이 null", async () => {
     const d = createInitialData();
-    const rpc = vi.fn().mockResolvedValue({ data: { ...d, revision: 1 } });
+    const rpc = vi.fn(async (name) => ({
+      data:
+        name === "get_volleyball_scoring_version" ? 3 : { ...d, revision: 1 },
+    }));
     await createSupabaseRepository({ rpc }).save(d, { initialize: true });
     expect(rpc).toHaveBeenCalledWith(
       "save_tournament",

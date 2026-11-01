@@ -51,6 +51,15 @@ beforeAll(async () => {
     ),
   );
   await db.exec(
+    readFileSync(
+      new URL(
+        "../../supabase/migrations/003_volleyball_no_deuce.sql",
+        import.meta.url,
+      ),
+      "utf8",
+    ),
+  );
+  await db.exec(
     `insert into public.tournament_admins(user_id) values ('${adminId}');`,
   );
 }, 60000);
@@ -63,6 +72,15 @@ describe("실제 로컬 PostgreSQL 마이그레이션·RLS·트랜잭션 (원격
       readFileSync(
         new URL(
           "../../supabase/migrations/002_multi_sport_tournament.sql",
+          import.meta.url,
+        ),
+        "utf8",
+      ),
+    );
+    await db.exec(
+      readFileSync(
+        new URL(
+          "../../supabase/migrations/003_volleyball_no_deuce.sql",
           import.meta.url,
         ),
         "utf8",
@@ -131,8 +149,8 @@ describe("실제 로컬 PostgreSQL 마이그레이션·RLS·트랜잭션 (원격
   it("잘못된 점수·위조 승자·결선 대진을 서버에서 차단", async () => {
     const d = await load();
     const bad = structuredClone(d);
-    bad.matches[0].sets[0] = { home: 25, away: 24 };
-    await expect(save(bad)).rejects.toThrow("INVALID_FINAL_SCORE");
+    bad.matches[0].sets[0] = { home: 26, away: 24 };
+    await expect(save(bad)).rejects.toThrow("SCORE_OVER_TARGET");
     const win = structuredClone(d);
     win.matches[0].winnerTeamId = "team-2";
     await expect(save(win)).rejects.toThrow("INVALID_WINNER");

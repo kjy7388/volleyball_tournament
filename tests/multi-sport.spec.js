@@ -89,6 +89,8 @@ test("두 종목 공개 화면 10개·탭·메뉴, 320/390/768/1440px 가로 넘
   page,
   backend,
 }) => {
+  // Forty full navigations plus local SQL reads need their own suite budget.
+  test.setTimeout(90000);
   await backend.initialize(createInitialData("dodgeball"));
   const errors = [];
   page.on("pageerror", (error) => errors.push(error.message));
