@@ -3,7 +3,12 @@ import { Outlet } from "react-router-dom";
 import { useTournament } from "../context/TournamentContext";
 import { useAuth } from "../context/AuthContext";
 import { createInitialData } from "../data/initialTournament";
-import { parseBackupFile } from "../services/supabaseTournament";
+import {
+  parseBackupFile,
+  createSupabaseRepository,
+} from "../services/supabaseTournament";
+import { supabase } from "../lib/supabaseClient";
+import { createGroupMatches } from "../data/initialTournament";
 import { ConfirmModal } from "./Modal";
 export function ConfigurationState() {
   const { configurationError, backupLegacy } = useTournament();
@@ -47,8 +52,36 @@ export function TournamentGate({ children }) {
 }
 function InitializeTournament() {
   const { isAdmin } = useAuth();
-  const { commit, notify, backupLegacy, saving } = useTournament();
+  const { commit, notify, backupLegacy, saving, sport } = useTournament();
   const [candidate, setCandidate] = useState(null);
+  const [copying, setCopying] = useState(false);
+  const copyVolleyball = async () => {
+    setCopying(true);
+    try {
+      const source = await createSupabaseRepository(
+        supabase,
+        "volleyball-cup",
+      ).load();
+      if (!source) throw new Error("복사할 배구 참가 명단이 없습니다.");
+      const next = createInitialData("dodgeball");
+      next.teams = structuredClone(source.teams);
+      const groups = createGroupMatches(next.teams);
+      next.matches = next.matches.map((m) =>
+        m.stage !== "group"
+          ? m
+          : {
+              ...m,
+              homeTeamId: groups.find((g) => g.id === m.id).homeTeamId,
+              awayTeamId: groups.find((g) => g.id === m.id).awayTeamId,
+            },
+      );
+      setCandidate(next);
+    } catch (e) {
+      notify(e.message, "error");
+    } finally {
+      setCopying(false);
+    }
+  };
   const importFile = async (e) => {
     try {
       setCandidate(await parseBackupFile(e.target.files[0]));
@@ -74,11 +107,22 @@ function InitializeTournament() {
           <>
             <button
               className="button"
-              disabled={saving}
-              onClick={() => setCandidate(createInitialData())}
+              disabled={saving || copying}
+              onClick={() => setCandidate(createInitialData(sport.key))}
             >
               최초 샘플 데이터 등록
             </button>
+            {sport.key === "dodgeball" && (
+              <button
+                className="button secondary"
+                disabled={saving || copying}
+                onClick={copyVolleyball}
+              >
+                {copying
+                  ? "명단 조회 중…"
+                  : "배구 참가 반·선수 명단으로 최초 생성"}
+              </button>
+            )}
             <label className="button secondary file-button">
               JSON 백업으로 최초 복원
               <input

@@ -28,6 +28,15 @@ export const test = base.extend({
         ),
       );
       await db.exec(
+        readFileSync(
+          new URL(
+            "../supabase/migrations/002_multi_sport_tournament.sql",
+            import.meta.url,
+          ),
+          "utf8",
+        ),
+      );
+      await db.exec(
         `insert into public.tournament_admins(user_id) values('${adminId}');`,
       );
       let chain = Promise.resolve();
@@ -46,11 +55,12 @@ export const test = base.extend({
           uid || "",
         ]);
       };
-      const snapshot = () =>
+      const snapshot = (id = "volleyball-cup") =>
         serial(async () => {
           await role("");
-          return (await db.query("select public.get_public_tournament() data"))
-            .rows[0].data;
+          return (
+            await db.query("select public.get_public_tournament($1) data", [id])
+          ).rows[0].data;
         });
       const rpcSave = async (data, initialize = false, ack = []) => {
         await role(adminId);
@@ -149,6 +159,12 @@ export const test = base.extend({
                   return (
                     await db.query("select public.is_tournament_admin() data")
                   ).rows[0].data;
+                if (name === "get_sports_schema_version")
+                  return (
+                    await db.query(
+                      "select public.get_sports_schema_version() data",
+                    )
+                  ).rows[0].data;
                 if (name === "get_public_tournament") {
                   loads++;
                   return (
@@ -185,6 +201,7 @@ export const test = base.extend({
       await install(context);
       const backend = {
         snapshot,
+        initialize: (data) => serial(() => rpcSave(data, true)),
         install,
         setSaveFailure: (value) => {
           failSave = value;
@@ -199,7 +216,9 @@ export const test = base.extend({
         replace: (data) =>
           serial(async () => {
             const current = (
-              await db.query("select public.get_public_tournament() data")
+              await db.query("select public.get_public_tournament($1) data", [
+                data.tournament.id,
+              ])
             ).rows[0].data;
             return rpcSave(
               { ...data, revision: current.revision },
@@ -210,7 +229,7 @@ export const test = base.extend({
         clear: () =>
           serial(async () => {
             await db.exec(
-              "reset role; delete from public.match_sets; delete from public.matches; delete from public.players; delete from public.teams; delete from public.tournaments;",
+              "reset role; delete from public.match_rounds; delete from public.match_sets; delete from public.matches; delete from public.players; delete from public.teams; delete from public.tournaments;",
             );
           }),
       };

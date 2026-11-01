@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { useTournament } from "../context/TournamentContext";
 import { useAuth } from "../context/AuthContext";
+import SportSelector from "./SportSelector";
 const publicLinks = [
   ["/", "홈"],
   ["/groups", "조별리그"],
@@ -24,7 +25,8 @@ const adminLinks = [
   ["/admin/settings", "대회 설정", Settings],
 ];
 export default function Layout() {
-  const { data, error, refresh, saving, connection, notify } = useTournament();
+  const { sport, data, error, refresh, saving, connection, notify } =
+    useTournament();
   const { isAdmin, session, signOut } = useAuth();
   const { pathname } = useLocation();
   const admin = pathname.startsWith("/admin");
@@ -32,22 +34,31 @@ export default function Layout() {
     <div className={admin ? "app admin-app" : "app"}>
       <header className="site-header">
         <div className={`header-inner${admin ? "" : " public-header"}`}>
-          <Link className="brand" to="/" aria-label="VOLLEYBALL CUP 홈">
+          <Link
+            className="brand"
+            to={`/${sport.key}`}
+            aria-label="SPORTS TOURNAMENT 홈"
+          >
             <img src="/volleyball.svg" alt="" />
             <span>
-              VOLLEYBALL<span className="brand-light"> CUP</span>
+              SPORTS<span className="brand-light"> TOURNAMENT</span>
               <small>CLASS TOGETHER. PLAY TOGETHER.</small>
             </span>
           </Link>
+          <SportSelector />
           <nav className="public-nav" aria-label="주 메뉴">
             {publicLinks.map(([to, label]) => (
-              <NavLink key={to} to={to} end={to === "/"}>
+              <NavLink
+                key={to}
+                to={`/${sport.key}${to === "/" ? "" : to}`}
+                end={to === "/"}
+              >
                 {label}
               </NavLink>
             ))}
           </nav>
           {admin && (
-            <Link className="admin-link selected" to="/">
+            <Link className="admin-link selected" to={`/${sport.key}`}>
               <ArrowUpRight size={15} />
               <span>대회 홈페이지</span>
             </Link>
@@ -89,7 +100,11 @@ export default function Layout() {
             <div className="eyebrow">TOURNAMENT DESK</div>
             <nav aria-label="관리자 메뉴">
               {adminLinks.map(([to, label, Icon]) => (
-                <NavLink key={to} to={to} end={to === "/admin"}>
+                <NavLink
+                  key={to}
+                  to={to.replace("/admin", `/admin/${sport.key}`)}
+                  end={to === "/admin"}
+                >
                   <Icon size={18} />
                   {label}
                 </NavLink>
@@ -116,7 +131,7 @@ export default function Layout() {
       </div>
       <footer className="site-footer container">
         <div className="footer-brand">
-          <img src="/volleyball.svg" alt="" /> VOLLEYBALL CUP
+          <img src="/volleyball.svg" alt="" /> SPORTS TOURNAMENT
         </div>
         <span>하나의 팀, 함께 만드는 순간.</span>
         <small>

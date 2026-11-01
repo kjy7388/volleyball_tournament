@@ -3305,3 +3305,98 @@ td:last-child {
     top: 35px;
   }
 }
+
+/* Sport navigation: same palette, independent of score/dialog styling. */
+.header-inner,
+.header-inner.public-header {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 14px 28px;
+  padding-top: 20px;
+  padding-bottom: 14px;
+  height: auto;
+}
+.header-inner .brand {
+  grid-column: 1;
+  grid-row: 1;
+}
+.header-inner .sport-selector {
+  grid-column: 1 / -1;
+  grid-row: 2;
+}
+.header-inner .public-nav {
+  grid-column: 1 / -1;
+  grid-row: 3;
+  margin: 0;
+  justify-content: center;
+}
+.header-inner .admin-link {
+  grid-column: 2;
+  grid-row: 1;
+}
+.sport-selector {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+}
+.sport-selector a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 9px 28px;
+  border-radius: 9px;
+  background: #edf2fa;
+  color: #52637a;
+  border: 1px solid #dde5f2;
+  font-weight: 700;
+}
+.sport-selector a.active {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: white;
+}
+.round-input-row {
+  display: grid;
+  grid-template-columns: 65px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid #e6eaf1;
+}
+.round-input-row select {
+  min-height: 48px;
+  width: 100%;
+}
+@media (max-width: 850px) {
+  .header-inner,
+  .header-inner.public-header {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .header-inner .brand {
+    grid-column: 1 / -1;
+    justify-self: center;
+    min-width: 0;
+    max-width: 100%;
+  }
+  .header-inner .admin-link {
+    grid-row: 4;
+    grid-column: 1 / -1;
+    justify-self: center;
+  }
+  .header-inner .public-nav {
+    width: 100%;
+  }
+  .brand > span {
+    font-size: clamp(18px, 5.6vw, 22px);
+  }
+}
+@media (min-width: 851px) {
+  .header-inner .brand {
+    justify-self: start;
+  }
+  .header-inner.public-header .public-nav {
+    justify-self: end;
+  }
+}

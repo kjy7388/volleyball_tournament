@@ -1,9 +1,11 @@
 import { calculateStandings } from "./standings";
-import { confirmedResult, emptySets } from "./matchRules";
+import { emptySets } from "./matchRules";
+import { matchResult as confirmedResult, hasResultInput } from "./sportRules";
+import { emptyRounds } from "./dodgeballRules";
 export const clearResult = (m) => ({
   ...m,
   status: "scheduled",
-  sets: emptySets(),
+  ...(m.rounds ? { rounds: emptyRounds() } : { sets: emptySets() }),
   winnerTeamId: null,
   confirmedAt: null,
   rulesSnapshot: null,
@@ -39,11 +41,7 @@ export function syncBracket(data) {
     const index = next.matches.findIndex((m) => m.id === id);
     const m = next.matches[index];
     if (m.homeTeamId !== home || m.awayTeamId !== away) {
-      if (
-        m.status !== "scheduled" ||
-        m.sets.some((s) => s.home !== "" || s.away !== "")
-      )
-        affected.push(m.id);
+      if (m.status !== "scheduled" || hasResultInput(m)) affected.push(m.id);
       next.matches[index] = {
         ...clearResult(m),
         homeTeamId: home,

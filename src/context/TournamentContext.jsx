@@ -6,6 +6,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { sportFromPath } from "../data/sports";
 import { useLocation } from "react-router-dom";
 import { supabase, configurationError } from "../lib/supabaseClient";
 import {
@@ -16,9 +17,20 @@ import {
 import { useAuth } from "./AuthContext";
 const Context = createContext(null);
 export function TournamentProvider({ children, client = supabase }) {
+  const { pathname } = useLocation();
+  const sport = sportFromPath(pathname);
+  return (
+    <SportTournamentProvider key={sport.key} sport={sport} client={client}>
+      {children}
+    </SportTournamentProvider>
+  );
+}
+function SportTournamentProvider({ children, client, sport }) {
   const { isAdmin, recheck } = useAuth();
   const { pathname } = useLocation();
-  const repo = useRef(client ? createSupabaseRepository(client) : null).current;
+  const repo = useRef(
+    client ? createSupabaseRepository(client, sport.id) : null,
+  ).current;
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(!!client);
   const [loaded, setLoaded] = useState(false);
@@ -148,7 +160,7 @@ export function TournamentProvider({ children, client = supabase }) {
   };
   const backup = () => {
     try {
-      downloadBackup(dataRef.current);
+      downloadBackup(dataRef.current, `${sport.key}-backup.json`);
     } catch (e) {
       notify(e.message, "error");
     }
@@ -164,6 +176,7 @@ export function TournamentProvider({ children, client = supabase }) {
     <Context.Provider
       value={{
         data,
+        sport,
         error,
         loading,
         loaded,

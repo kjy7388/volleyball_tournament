@@ -2,7 +2,7 @@ import { Users } from "lucide-react";
 import { PageTitle } from "../components/Common";
 import { TeamAvatar } from "../components/MatchCard";
 import { useTournament } from "../context/TournamentContext";
-import { confirmedResult } from "../utils/matchRules";
+import { matchResult as confirmedResult } from "../utils/sportRules";
 export default function Teams() {
   const { data } = useTournament();
   return (

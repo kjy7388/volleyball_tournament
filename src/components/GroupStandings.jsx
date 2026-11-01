@@ -2,7 +2,7 @@ import { calculateStandings } from "../utils/standings";
 import { useTournament } from "../context/TournamentContext";
 import { TeamAvatar } from "./MatchCard";
 export default function GroupStandings({ group, mini = false }) {
-  const { data } = useTournament();
+  const { data, sport } = useTournament();
   const result = calculateStandings(
     data.teams,
     data.matches,
@@ -35,10 +35,18 @@ export default function GroupStandings({ group, mini = false }) {
               <th>경기</th>
               <th>승</th>
               <th>패</th>
-              <th>세트 득실</th>
+              {sport.key === "dodgeball" ? (
+                <>
+                  <th>승리 판</th>
+                  <th>패배 판</th>
+                  <th>판 득실차</th>
+                </>
+              ) : (
+                <th>세트 득실</th>
+              )}
               {!mini && (
                 <>
-                  <th>득실점</th>
+                  {sport.key === "volleyball" && <th>득실점</th>}
                   <th>진출</th>
                 </>
               )}
@@ -56,24 +64,40 @@ export default function GroupStandings({ group, mini = false }) {
                   <span className="table-team">
                     <TeamAvatar name={r.team.name} group={group} small />
                     <strong>{r.team.name}</strong>
+                    {r.manuallyResolved && (
+                      <small className="qualified-tag">관리자 확정</small>
+                    )}
                   </span>
                 </td>
                 <td>{r.played}</td>
                 <td className="blue">{r.wins}</td>
                 <td>{r.losses}</td>
-                <td>
-                  {r.setsFor}:{r.setsAgainst}{" "}
-                  <small className="muted">
-                    ({r.setDiff > 0 ? "+" : ""}
-                    {r.setDiff})
-                  </small>
-                </td>
+                {sport.key === "dodgeball" ? (
+                  <>
+                    <td>{r.setsFor}</td>
+                    <td>{r.setsAgainst}</td>
+                    <td>
+                      {r.setDiff > 0 ? "+" : ""}
+                      {r.setDiff}
+                    </td>
+                  </>
+                ) : (
+                  <td>
+                    {r.setsFor}:{r.setsAgainst}{" "}
+                    <small className="muted">
+                      ({r.setDiff > 0 ? "+" : ""}
+                      {r.setDiff})
+                    </small>
+                  </td>
+                )}
                 {!mini && (
                   <>
-                    <td>
-                      {r.pointDiff > 0 ? "+" : ""}
-                      {r.pointDiff}
-                    </td>
+                    {sport.key === "volleyball" && (
+                      <td>
+                        {r.pointDiff > 0 ? "+" : ""}
+                        {r.pointDiff}
+                      </td>
+                    )}
                     <td>
                       {r.qualified ? (
                         <span className="qualified-tag">진출 확정</span>

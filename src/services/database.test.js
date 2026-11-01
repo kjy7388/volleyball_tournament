@@ -42,6 +42,15 @@ beforeAll(async () => {
   );
   await db.exec(sql);
   await db.exec(
+    readFileSync(
+      new URL(
+        "../../supabase/migrations/002_multi_sport_tournament.sql",
+        import.meta.url,
+      ),
+      "utf8",
+    ),
+  );
+  await db.exec(
     `insert into public.tournament_admins(user_id) values ('${adminId}');`,
   );
 }, 60000);
@@ -50,7 +59,15 @@ afterAll(async () => {
 });
 describe("실제 로컬 PostgreSQL 마이그레이션·RLS·트랜잭션 (원격 Supabase 아님)", () => {
   it("마이그레이션 재실행과 빈 데이터 조회", async () => {
-    await db.exec(sql);
+    await db.exec(
+      readFileSync(
+        new URL(
+          "../../supabase/migrations/002_multi_sport_tournament.sql",
+          import.meta.url,
+        ),
+        "utf8",
+      ),
+    );
     await as("anon");
     expect(await load()).toBeNull();
   });

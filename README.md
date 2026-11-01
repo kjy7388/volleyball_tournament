@@ -1,6 +1,10 @@
-# VOLLEYBALL CUP
+# SPORTS TOURNAMENT · 배구·피구
 
-6개 반의 배구 토너먼트 운영 웹사이트입니다. React + Vite, JavaScript/JSX, React Router, Lucide React, Supabase Auth·PostgreSQL·Realtime을 사용합니다. 기존 홈·순위표·대진표·일정·선수·관리자 디자인과 경기 계산 로직을 유지했습니다.
+각 종목 6개 반·9경기의 배구·피구 통합 운영 웹사이트입니다. React + Vite, JavaScript/JSX, React Router, Lucide React, Supabase Auth·PostgreSQL·Realtime을 사용합니다. 기존 홈·순위표·대진표·일정·선수·관리자 디자인과 배구 경기 계산 로직을 유지했습니다.
+
+**기존 Supabase 프로젝트의 통합 전환은 [MULTI_SPORT_UPGRADE.md](docs/MULTI_SPORT_UPGRADE.md)를 먼저 확인하세요.** 001을 다시 실행하지 말고, 백업·검토·사용자 승인 후 새 002만 적용합니다. 로컬 테스트는 실제 DB를 변경하지 않습니다. 관리자 계정·GitHub 저장소·Vercel 프로젝트는 기존 것을 사용합니다.
+
+현재 기존 프로젝트에는 사용자가 002 적용을 완료했습니다. 배포 전 읽기 전용 확인에서도 DB 버전 2와 배구·피구 각각 6개 반·9경기 조회를 확인했습니다. 이 프로젝트에서 001·002를 다시 실행하거나 데이터를 초기화할 필요는 없습니다. 아래 SQL 설정 절차는 아직 통합하지 않은 별도 환경을 위한 안내입니다.
 
 ## 시작하기
 
@@ -11,13 +15,14 @@ cd 'C:\Users\김장엽\Desktop\Yeop\VS Code\volleyball tournament'
 npm install
 ```
 
-1. [Supabase 설정 안내](docs/SUPABASE_SETUP.md)에 따라 SQL을 검토하고 직접 실행합니다.
+1. 기존 DB는 [통합 전환 안내](docs/MULTI_SPORT_UPGRADE.md)를 따릅니다. 완전히 빈 새 테스트 DB만 001→002 순서로 설정합니다.
 2. `.env.example`을 `.env.local`로 복사하고 실제 프로젝트 URL·Publishable Key를 직접 입력합니다. 서버 키는 사용하지 않습니다.
-3. Supabase Dashboard에서 Auth 사용자를 생성하고 관리자 등록 SQL에 실제 Auth User ID를 입력해 직접 실행합니다.
+3. 기존 관리자 계정을 그대로 사용합니다. 새 테스트 DB에서만 [설정 안내](docs/SUPABASE_SETUP.md)에 따라 최초 관리자를 등록합니다.
 4. `npm run dev`를 실행합니다. 환경변수 변경 후에는 서버를 다시 시작하세요.
 
-- 홈페이지: http://localhost:5173
-- 관리자: http://localhost:5173/admin
+- 배구: http://localhost:5173/volleyball · 피구: http://localhost:5173/dodgeball
+- 관리자: http://localhost:5173/admin/volleyball · http://localhost:5173/admin/dodgeball
+- 기존 `/`, `/groups`, `/bracket`, `/schedule`, `/teams`, `/admin` 및 관리자 하위 주소는 배구 새 경로로 이동합니다.
 - 설정이 없으면 안내 화면이 표시됩니다. 데이터는 자동으로 생성·삭제·덮어쓰기하지 않습니다.
 - DB가 비어 있으면 관리자 로그인 후 샘플 최초 등록 또는 기존 JSON 백업으로 최초 복원을 선택할 수 있습니다.
 
@@ -26,6 +31,9 @@ npm install
 | 파일                                                                 | 용도                                                                             |
 | -------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
 | [001_initial_schema.sql](supabase/migrations/001_initial_schema.sql) | 테이블, 제약, RLS, grants, 권한 확인, 조회·원자적 저장 RPC, Realtime publication |
+| [002_multi_sport_tournament.sql](supabase/migrations/002_multi_sport_tournament.sql) | 기존 DB의 배구 기록·계정 보존, 피구 판 결과 및 종목별 저장 확장 |
+| [multi_sport_preflight.sql](supabase/checks/multi_sport_preflight.sql) | 적용 전 스키마·정책·함수·Revision 읽기 전용 점검 |
+| [MULTI_SPORT_UPGRADE.md](docs/MULTI_SPORT_UPGRADE.md) | 종목별 구조, 백업, SQL 승인·이전·실제 검증·배포 절차 |
 | [register_first_admin.sql](supabase/admin/register_first_admin.sql)  | 프로젝트 소유자가 실제 Auth UUID로 최초 관리자 등록                              |
 | [verify_permissions.sql](supabase/checks/verify_permissions.sql)     | 실제 프로젝트의 RLS·grants를 읽기 전용으로 점검                                  |
 | [.env.example](.env.example)                                         | 공개 환경변수 이름·예시                                                          |
@@ -39,6 +47,8 @@ npm install
 일반 사용자는 로그인 없이 공개 데이터만 읽습니다. 로그인 계정 중 `tournament_admins`에 등록된 계정만 변경할 수 있습니다. 관리자 목록은 공개하지 않습니다. 직접 테이블 변경은 관리자에게도 허용하지 않으며, 전용 RPC가 서버 권한·점수·대진·확인된 초기화 목록을 검사하고 하나의 트랜잭션으로 저장합니다. 이전 revision은 비공개 감사 테이블에 보관합니다.
 
 기본 규칙은 25·25·25·25·15점, 2점 차, 3세트 선승입니다. 미확정 경기는 순위에서 제외합니다. 동률은 승수 → 세트 득실 → 득실점 → 상대 전적 순으로 계산하고, 해소되지 않으면 관리자 확인을 요구합니다. 이전 결과 수정으로 결선에 영향이 생기면 확인 후 해당 기록을 초기화합니다. 최신 revision과 다르면 저장을 거부합니다.
+
+피구는 숫자 점수 대신 각 판의 승리 반만 선택하는 5판 3선승제입니다. 순위는 승수 → 판 득실 → 상대 전적 → 동률 집단 내 관리자 확정 순입니다. 종목별 선수·조 편성·결과·Revision·데모·초기화는 독립적입니다. 종목 전환 전 미저장 편집을 저장하세요.
 
 관리자 데모·초기화는 모든 사용자에게 보이는 DB를 변경하므로 반드시 백업하고 확인하세요. JSON 가져오기는 빈 DB에만 가능합니다. 이미 운영 데이터가 있으면 서버가 덮어쓰기를 거부합니다.
 

@@ -1,6 +1,29 @@
 import { test, expect, login } from "./fixtures.js";
 const paths = ["/", "/groups", "/bracket", "/schedule", "/teams"];
 const labels = ["홈", "조별리그", "토너먼트", "경기 일정", "참가 반"];
+test("웹폰트가 없어도 320px 로고 중심·종목 탭·공개 메뉴 유지", async ({
+  page,
+}) => {
+  await page.route(/fonts\.(googleapis|gstatic)\.com/, (route) =>
+    route.abort(),
+  );
+  await page.setViewportSize({ width: 320, height: 844 });
+  await page.goto("/dodgeball");
+  const brand = await page.locator(".brand").boundingBox();
+  expect(Math.abs(brand.x + brand.width / 2 - 160)).toBeLessThan(2);
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
+  await expect(
+    page.getByRole("navigation", { name: "종목 선택" }).getByRole("link"),
+  ).toHaveCount(2);
+  await expect(
+    page.getByRole("navigation", { name: "주 메뉴" }).getByRole("link"),
+  ).toHaveText(labels);
+  await expect(page.locator('a[href^="/admin"]')).toHaveCount(0);
+});
 for (const width of [1440, 1024, 768, 390, 320]) {
   test(`${width}px 일반 화면은 공개 메뉴 5개만 표시하고 관리자 이동 링크 없음`, async ({
     page,
@@ -65,7 +88,7 @@ test("관리자 직접 접속·로그인·로그아웃·홈페이지 이동 버�
     page.getByRole("button", { name: "로그아웃", exact: true }),
   ).toBeVisible();
   await page.getByRole("link", { name: "대회 홈페이지", exact: true }).click();
-  await expect(page).toHaveURL("http://127.0.0.1:5174/");
+  await expect(page).toHaveURL("http://127.0.0.1:5174/volleyball");
   await expect(page.locator('a[href^="/admin"]')).toHaveCount(0);
   await page.goto("/admin");
   await page.getByRole("button", { name: "로그아웃", exact: true }).click();

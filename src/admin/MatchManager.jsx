@@ -12,19 +12,22 @@ import { PageTitle, SectionTitle } from "../components/Common";
 import MatchCard, { StatusBadge } from "../components/MatchCard";
 import Modal, { ConfirmModal } from "../components/Modal";
 import { planMatchUpdate } from "../services/tournamentStorage";
+import DodgeballRoundEditor from "./DodgeballRoundEditor";
+import VolleyballScoreEditor from "./VolleyballScoreEditor";
+import { analyzeRounds } from "../utils/dodgeballRules";
 import { analyzeSets } from "../utils/matchRules";
 import { calculateStandings } from "../utils/standings";
 import { syncBracket } from "../utils/bracketLogic";
 import { teamLabel, matchDate, stageLabel } from "../utils/display";
 export default function MatchManager() {
-  const { data } = useTournament();
+  const { data, sport } = useTournament();
   const [selected, setSelected] = useState(null);
   return (
     <>
       <PageTitle
         eyebrow="MATCH CONTROL"
         title="경기 결과 관리"
-        description="세트별 점수를 입력하고 결과를 확정하세요. 순위와 다음 대진이 자동 반영됩니다."
+        description={`${sport.unit}별 결과를 입력하고 확정하세요. 순위와 다음 대진이 자동 반영됩니다.`}
       />
       <div className="notice">
         임시 저장은 순위에 반영되지 않습니다. 결과 확정 전 점수와 승리 반을 다시
@@ -64,13 +67,17 @@ export default function MatchManager() {
 }
 function ScoreEditor({ match, onClose }) {
   const { data, commit, notify } = useTournament();
-  const [sets, setSets] = useState(() => structuredClone(match.sets));
+  const dodgeball = !!match.rounds;
+  const [sets, setSets] = useState(() =>
+    structuredClone(match.rounds || match.sets),
+  );
   const [plan, setPlan] = useState(null);
   const [base] = useState(data);
   const rules = match.rulesSnapshot || data.tournament.setRules;
-  const result = analyzeSets(sets, rules);
+  const result = dodgeball ? analyzeRounds(sets) : analyzeSets(sets, rules);
   const ready = match.homeTeamId && match.awayTeamId;
   const terminalAt = (() => {
+    if (dodgeball) return 4;
     let h = 0;
     let a = 0;
     for (let i = 0; i < sets.length; i++) {
@@ -148,7 +155,7 @@ function ScoreEditor({ match, onClose }) {
                 <b>{result.homeWins}</b>
                 <span>:</span>
                 <b>{result.awayWins}</b>
-                <small>세트 스코어</small>
+                <small>{dodgeball ? "판" : "세트"} 스코어</small>
               </div>
               <strong>{teamLabel(data, match, "away")}</strong>
             </div>
@@ -160,63 +167,18 @@ function ScoreEditor({ match, onClose }) {
                 제외됩니다.
               </div>
             )}
-            <div className="score-input-table">
-              <div className="score-input-head">
-                <span>세트 / 목표</span>
-                <strong>{teamLabel(data, match, "home")}</strong>
-                <span />
-                <strong>{teamLabel(data, match, "away")}</strong>
-              </div>
-              {sets.map((s, i) => {
-                const disabled = i > terminalAt;
-                return (
-                  <div
-                    className={`score-input-row ${disabled ? "disabled" : ""}`}
-                    key={i}
-                  >
-                    <div>
-                      <strong>{i + 1}세트</strong>
-                      <small>
-                        {disabled ? "승부 결정" : `${rules[i]}점제`}
-                      </small>
-                    </div>
-                    <input
-                      type="number"
-                      inputMode="numeric"
-                      min="0"
-                      max="9999"
-                      step="1"
-                      aria-label={`${i + 1}세트 ${teamLabel(data, match, "home")} 점수`}
-                      value={s.home}
-                      disabled={disabled && s.home === "" && s.away === ""}
-                      onChange={(e) => change(i, "home", e.target.value)}
-                      onKeyDown={(e) => {
-                        if (["-", "+", ".", "e", "E"].includes(e.key))
-                          e.preventDefault();
-                      }}
-                      placeholder="–"
-                    />
-                    <span>:</span>
-                    <input
-                      type="number"
-                      inputMode="numeric"
-                      min="0"
-                      max="9999"
-                      step="1"
-                      aria-label={`${i + 1}세트 ${teamLabel(data, match, "away")} 점수`}
-                      value={s.away}
-                      disabled={disabled && s.home === "" && s.away === ""}
-                      onChange={(e) => change(i, "away", e.target.value)}
-                      onKeyDown={(e) => {
-                        if (["-", "+", ".", "e", "E"].includes(e.key))
-                          e.preventDefault();
-                      }}
-                      placeholder="–"
-                    />
-                  </div>
-                );
-              })}
-            </div>
+            {dodgeball ? (
+              <DodgeballRoundEditor
+                rounds={sets}
+                setRounds={setSets}
+                home={teamLabel(data, match, "home")}
+                away={teamLabel(data, match, "away")}
+              />
+            ) : (
+              <VolleyballScoreEditor
+                {...{ sets, terminalAt, data, match, rules, change }}
+              />
+            )}
             {result.errors.length > 0 && (
               <div className="validation-errors" role="alert">
                 {result.errors.map((e) => (
@@ -241,8 +203,9 @@ function ScoreEditor({ match, onClose }) {
               </div>
             )}
             <p className="muted small-text">
-              최소 2점 차 · 먼저 3세트 승리 · 임시 점수는 완성되지 않아도 저장할
-              수 있습니다.
+              {dodgeball
+                ? "먼저 3판 승리 · 미진행 판은 승리 반을 선택하지 않습니다."
+                : "최소 2점 차 · 먼저 3세트 승리 · 임시 점수는 완성되지 않아도 저장할 수 있습니다."}
             </p>
             <div className="modal-actions">
               <button

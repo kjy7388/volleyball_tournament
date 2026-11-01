@@ -17,7 +17,7 @@ import { createDemoData } from "../services/tournamentStorage";
 import { createInitialData } from "../data/initialTournament";
 import { nextMatch } from "../utils/display";
 export default function AdminDashboard() {
-  const { data, commit, backup, backupLegacy } = useTournament();
+  const { sport, data, commit, backup, backupLegacy } = useTournament();
   const navigate = useNavigate();
   const [action, setAction] = useState(null);
   const [actionBase, setActionBase] = useState(null);
@@ -38,7 +38,7 @@ export default function AdminDashboard() {
         title="대회 운영 대시보드"
         description="오늘의 코트를 준비하는 곳. 경기부터 선수 명단까지 관리하세요."
         action={
-          <Link className="button" to="/admin/matches">
+          <Link className="button" to={`/admin/${sport.key}/matches`}>
             결과 입력 <ArrowRight size={17} />
           </Link>
         }
@@ -71,7 +71,7 @@ export default function AdminDashboard() {
           {next ? (
             <MatchCard
               match={next}
-              onClick={() => navigate("/admin/matches")}
+              onClick={() => navigate(`/admin/${sport.key}/matches`)}
             />
           ) : (
             <Empty>모든 경기가 종료되었습니다.</Empty>
@@ -103,7 +103,10 @@ export default function AdminDashboard() {
           </div>
         </section>
       </div>
-      <SectionTitle title="최근 입력한 경기 결과" to="/admin/matches" />
+      <SectionTitle
+        title="최근 입력한 경기 결과"
+        to={`/admin/${sport.key}/matches`}
+      />
       {recent.length ? (
         <div className="match-grid">
           {recent.map((m) => (
@@ -168,8 +171,8 @@ export default function AdminDashboard() {
               await commit(
                 {
                   ...(action === "demo"
-                    ? createDemoData()
-                    : createInitialData()),
+                    ? createDemoData(sport.key)
+                    : createInitialData(sport.key)),
                   revision: actionBase.revision,
                 },
                 action === "demo"

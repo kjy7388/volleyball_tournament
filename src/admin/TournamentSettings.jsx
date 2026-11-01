@@ -34,7 +34,7 @@ export default function TournamentSettings() {
       notify("종료일은 시작일 이후여야 합니다.", "error");
       return;
     }
-    if (t.setRules.some((n) => !Number.isInteger(n) || n < 2 || n > 999)) {
+    if (t.setRules?.some((n) => !Number.isInteger(n) || n < 2 || n > 999)) {
       notify("세트 목표 점수는 2~999 사이의 정수여야 합니다.", "error");
       return;
     }
@@ -100,7 +100,7 @@ export default function TournamentSettings() {
       <PageTitle
         eyebrow="TOURNAMENT SETTINGS"
         title="대회 설정"
-        description="대회의 이름, 일정, 장소와 세트 규칙을 설정하세요."
+        description="선택한 종목의 대회 이름, 일정, 장소와 경기 규칙을 설정하세요."
         action={
           <button type="submit" className="button">
             <Save size={17} />
@@ -113,6 +113,15 @@ export default function TournamentSettings() {
           <SlidersHorizontal size={20} />
           기본 정보
         </h2>
+        <p className="muted">
+          진행 상태:{" "}
+          {
+            { upcoming: "시작 전", ongoing: "진행 중", completed: "종료" }[
+              t.status
+            ]
+          }{" "}
+          · 경기 결과에 따라 자동 계산됩니다.
+        </p>
         <label>
           대회명
           <input
@@ -176,43 +185,53 @@ export default function TournamentSettings() {
           위 장소를 모든 경기 설정에 적용
         </button>
       </section>
-      <section className="panel settings-panel">
-        <h2>
-          <SlidersHorizontal size={20} />
-          세트별 목표 점수
-        </h2>
-        <div className="rules-inputs">
-          {t.setRules.map((n, i) => (
-            <label key={i}>
-              {i + 1}세트
-              <input
-                type="number"
-                min="2"
-                max="999"
-                step="1"
-                required
-                value={n}
-                onChange={(e) =>
-                  field(
-                    "setRules",
-                    t.setRules.map((v, j) =>
-                      j === i
-                        ? e.target.value === ""
-                          ? ""
-                          : Number(e.target.value)
-                        : v,
-                    ),
-                  )
-                }
-              />
-            </label>
-          ))}
-        </div>
-        <p className="muted">
-          2점 차 승리 · 5세트 3선승제. 이미 점수가 저장된 경기는 당시 규칙을
-          유지하고, 새 경기부터 변경 규칙을 적용합니다.
-        </p>
-      </section>
+      {t.setRules ? (
+        <section className="panel settings-panel">
+          <h2>
+            <SlidersHorizontal size={20} />
+            세트별 목표 점수
+          </h2>
+          <div className="rules-inputs">
+            {t.setRules.map((n, i) => (
+              <label key={i}>
+                {i + 1}세트
+                <input
+                  type="number"
+                  min="2"
+                  max="999"
+                  step="1"
+                  required
+                  value={n}
+                  onChange={(e) =>
+                    field(
+                      "setRules",
+                      t.setRules.map((v, j) =>
+                        j === i
+                          ? e.target.value === ""
+                            ? ""
+                            : Number(e.target.value)
+                          : v,
+                      ),
+                    )
+                  }
+                />
+              </label>
+            ))}
+          </div>
+          <p className="muted">
+            2점 차 승리 · 5세트 3선승제. 이미 점수가 저장된 경기는 당시 규칙을
+            유지하고, 새 경기부터 변경 규칙을 적용합니다.
+          </p>
+        </section>
+      ) : (
+        <section className="panel settings-panel">
+          <h2>피구 경기 규칙</h2>
+          <p>
+            5판 3선승제 · 각 판의 승리 반 선택 · 무승부 없음 · 3승 이후 판
+            미진행
+          </p>
+        </section>
+      )}
       <section className="panel settings-panel">
         <h2>
           <CalendarDays size={20} />

@@ -17,7 +17,7 @@ import GroupStandings from "../components/GroupStandings";
 import { nextMatch, tournamentDates } from "../utils/display";
 import { calculateStandings } from "../utils/standings";
 export default function Home() {
-  const { data } = useTournament();
+  const { sport, data } = useTournament();
   const done = data.matches.filter((m) => m.status === "completed");
   const next = nextMatch(data);
   const recent = [...done]
@@ -56,7 +56,7 @@ export default function Home() {
           <p>
             {winner
               ? `${data.tournament.name} 우승을 축하합니다!`
-              : "6개의 반, 하나의 코트. 함께 뛰고, 함께 응원하는 배구대회."}
+              : `6개의 반, 하나의 코트. 함께 뛰고, 함께 응원하는 ${sport.label}대회.`}
           </p>
           <div className="hero-meta">
             <span>
@@ -74,7 +74,7 @@ export default function Home() {
           </div>
           <Link
             className="button hero-button"
-            to={winner ? "/bracket" : "/schedule"}
+            to={`/${sport.key}${winner ? "/bracket" : "/schedule"}`}
           >
             {winner ? "우승 여정 보기" : "경기 일정 확인"}
             <ArrowUpRight size={17} />
@@ -152,7 +152,7 @@ export default function Home() {
           <SectionTitle
             title="코트 위의 다음 순간"
             sub="다음 경기와 가장 최근의 결과를 확인하세요."
-            to="/schedule"
+            to={`/${sport.key}/schedule`}
           />
           {next ? (
             <MatchCard match={next} />
@@ -186,19 +186,19 @@ export default function Home() {
               "01",
               "조별리그",
               `${done.filter((m) => m.stage === "group").length} / 6 경기 종료`,
-              "/groups",
+              `/${sport.key}/groups`,
             ],
             [
               "02",
               "준결승",
               `${done.filter((m) => m.stage === "semifinal").length} / 2 경기 종료`,
-              "/bracket",
+              `/${sport.key}/bracket`,
             ],
             [
               "03",
               "결승",
               winner ? `${winner.name} 우승` : "최후의 두 팀을 기다립니다",
-              "/bracket",
+              `/${sport.key}/bracket`,
             ],
           ].map(([num, title, desc, to]) => (
             <Link className="journey-step" to={to} key={num}>
@@ -238,7 +238,7 @@ export default function Home() {
         <SectionTitle
           title="조별리그 순위"
           sub="각 조 상위 2개 반이 준결승에 진출합니다."
-          to="/groups"
+          to={`/${sport.key}/groups`}
         />
         <div className="two-columns">
           <GroupStandings group="A" mini />

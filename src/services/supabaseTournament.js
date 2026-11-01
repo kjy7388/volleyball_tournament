@@ -29,13 +29,29 @@ export function dataError(error) {
       (error?.code ? ` (오류 ${error.code})` : ""),
   );
 }
-export function createSupabaseRepository(client) {
+export function createSupabaseRepository(client, tournamentId = TOURNAMENT_ID) {
+  let supported = false;
   return {
     async load() {
+      if (tournamentId === "dodgeball-cup" && !supported) {
+        const capability = await client.rpc("get_sports_schema_version");
+        if (
+          capability.error &&
+          !["42883", "PGRST202"].includes(capability.error.code)
+        )
+          throw dataError(capability.error);
+        if (capability.error || capability.data !== 2)
+          throw new Error(
+            "피구 운영에는 002_multi_sport_tournament.sql 적용이 필요합니다. DB 백업과 SQL 검토 후 승인된 절차로 적용해주세요.",
+          );
+        supported = true;
+      }
       const { data, error } = await client.rpc("get_public_tournament", {
-        p_id: TOURNAMENT_ID,
+        p_id: tournamentId,
       });
       if (error) throw dataError(error);
+      if (data && data.tournament?.id !== tournamentId)
+        throw new Error("조회한 대회의 ID가 선택한 종목과 다릅니다.");
       return data ? validateData(data) : null;
     },
     async save(
@@ -43,7 +59,7 @@ export function createSupabaseRepository(client) {
       { initialize = false, acknowledgedMatchIds = [] } = {},
     ) {
       validateData(snapshot);
-      if (snapshot.tournament.id !== TOURNAMENT_ID)
+      if (snapshot.tournament.id !== tournamentId)
         throw new Error("이 앱의 대회 ID와 백업 파일의 대회 ID가 다릅니다.");
       const { data, error } = await client.rpc("save_tournament", {
         p_snapshot: snapshot,
@@ -52,19 +68,23 @@ export function createSupabaseRepository(client) {
         p_initialize: initialize,
       });
       if (error) throw dataError(error);
+      if (data?.tournament?.id !== tournamentId)
+        throw new Error(
+          "저장 응답의 대회 ID가 선택한 종목과 다릅니다. 다시 조회해주세요.",
+        );
       return validateData(data);
     },
     subscribe(onChange, onStatus = () => {}) {
       // Revision changes last in each transaction. One revision event covers all six tables.
       const channel = client
-        .channel(`tournament-${TOURNAMENT_ID}`)
+        .channel(`tournament-${tournamentId}`)
         .on(
           "postgres_changes",
           {
             event: "*",
             schema: "public",
             table: "tournaments",
-            filter: `id=eq.${TOURNAMENT_ID}`,
+            filter: `id=eq.${tournamentId}`,
           },
           onChange,
         )

@@ -1,3 +1,5 @@
+import { emptyRounds } from "../utils/dodgeballRules";
+import { SPORTS } from "./sports";
 import { emptySets } from "../utils/matchRules";
 export const SCHEMA_VERSION = 1;
 export function createGroupMatches(teams) {
@@ -38,7 +40,7 @@ function base(id, number, stage, location) {
     confirmedAt: null,
   };
 }
-export function createInitialData() {
+export function createInitialData(sport = "volleyball") {
   const teams = Array.from({ length: 6 }, (_, i) => ({
     id: `team-${i + 1}`,
     name: `${i + 1}반`,
@@ -49,14 +51,15 @@ export function createInitialData() {
       name: `예시선수 ${i + 1}-${j + 1}`,
     })),
   }));
-  return {
+  const data = {
     schemaVersion: SCHEMA_VERSION,
     revision: 0,
     isDemo: false,
     manualRankings: { A: [], B: [] },
     tournament: {
-      id: "volleyball-cup",
-      name: "VOLLEYBALL CUP",
+      id: SPORTS[sport].id,
+      sport,
+      name: SPORTS[sport].name,
       startDate: "",
       endDate: "",
       locations: {
@@ -76,4 +79,12 @@ export function createInitialData() {
       { ...base("final", 9, "final", "홍신관"), exampleDate: "12월 14일" },
     ],
   };
+  if (sport === "dodgeball") {
+    data.tournament.setRules = null;
+    data.matches = data.matches.map(({ sets, ...m }) => ({
+      ...m,
+      rounds: emptyRounds(),
+    }));
+  }
+  return data;
 }

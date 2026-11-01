@@ -5,21 +5,33 @@ import {
 } from "../data/initialTournament";
 import { analyzeSets, emptySets } from "../utils/matchRules";
 import { syncBracket, clearResult } from "../utils/bracketLogic";
+import { sportOf } from "../data/sports";
+import { analyzeRounds, emptyRounds } from "../utils/dodgeballRules";
+import { hasResultInput } from "../utils/sportRules";
+import { calculateStandings } from "../utils/standings";
 export const STORAGE_KEY = "volleyball-cup:data:v1";
 export function validateData(d) {
   if (!d || d.schemaVersion !== SCHEMA_VERSION)
     throw new Error(
       "저장 데이터 버전을 지원하지 않습니다. 원본을 백업한 뒤 초기화해주세요.",
     );
+  const dodgeball = sportOf(d) === "dodgeball";
+  if (
+    !["volleyball-cup", "dodgeball-cup"].includes(d.tournament?.id) ||
+    (d.tournament.sport && d.tournament.sport !== sportOf(d))
+  )
+    throw new Error("종목과 대회 ID가 일치하지 않습니다.");
   if (
     !Number.isSafeInteger(d.revision) ||
     d.revision < 0 ||
     !d.tournament ||
-    !Array.isArray(d.tournament.setRules) ||
-    d.tournament.setRules.length !== 5 ||
-    d.tournament.setRules.some(
-      (n) => !Number.isInteger(n) || n < 2 || n > 999,
-    ) ||
+    (!dodgeball &&
+      (!Array.isArray(d.tournament.setRules) ||
+        d.tournament.setRules.length !== 5 ||
+        d.tournament.setRules.some(
+          (n) => !Number.isInteger(n) || n < 2 || n > 999,
+        ))) ||
+    (dodgeball && d.tournament.setRules !== null) ||
     !d.tournament.locations ||
     !d.manualRankings ||
     !Array.isArray(d.manualRankings.A) ||
@@ -85,15 +97,22 @@ export function validateData(d) {
     if (
       m.stage !== stage ||
       !["scheduled", "live", "completed"].includes(m.status) ||
-      !Array.isArray(m.sets) ||
-      m.sets.length !== 5 ||
-      m.sets.some(
-        (s) =>
-          !s ||
-          ["home", "away"].some(
-            (k) => s[k] !== "" && (!Number.isSafeInteger(s[k]) || s[k] < 0),
-          ),
-      ) ||
+      (!dodgeball &&
+        (!Array.isArray(m.sets) ||
+          m.sets.length !== 5 ||
+          m.sets.some(
+            (s) =>
+              !s ||
+              ["home", "away"].some(
+                (k) => s[k] !== "" && (!Number.isSafeInteger(s[k]) || s[k] < 0),
+              ),
+          ))) ||
+      (dodgeball &&
+        (!Array.isArray(m.rounds) ||
+          m.rounds.length !== 5 ||
+          m.sets !== undefined ||
+          analyzeRounds(m.rounds).errors.length > 0)) ||
+      (!dodgeball && m.rounds !== undefined) ||
       [m.homeTeamId, m.awayTeamId].some(
         (id) => id !== null && !ids.includes(id),
       ) ||
@@ -109,7 +128,9 @@ export function validateData(d) {
     )
       throw new Error("조별 대진이 조 편성과 일치하지 않습니다.");
     if (m.status === "completed") {
-      const r = analyzeSets(m.sets, m.rulesSnapshot || d.tournament.setRules);
+      const r = dodgeball
+        ? analyzeRounds(m.rounds)
+        : analyzeSets(m.sets, m.rulesSnapshot || d.tournament.setRules);
       if (
         !r.complete ||
         !m.homeTeamId ||
@@ -131,6 +152,22 @@ export function validateData(d) {
       throw new Error("조별 경기가 중복되었습니다.");
   });
   const aligned = syncBracket(d).data;
+  for (const group of ["A", "B"]) {
+    const order = d.manualRankings[group];
+    if (
+      order.length &&
+      calculateStandings(
+        d.teams,
+        d.matches,
+        group,
+        d.tournament.setRules,
+        order,
+      ).rows.some((row, index) => row.team.id !== order[index])
+    )
+      throw new Error(
+        "관리자 순위는 자동 기준으로 구분되지 않는 동률 집단 안에서만 지정할 수 있습니다.",
+      );
+  }
   if (
     d.matches.some((m) => {
       const a = aligned.matches.find((n) => n.id === m.id);
@@ -166,11 +203,15 @@ export function planMatchUpdate(data, id, sets, mode) {
   const m = next.matches.find((m) => m.id === id);
   if (!m?.homeTeamId || !m?.awayTeamId)
     throw new Error("이전 라운드와 순위를 먼저 확정해주세요.");
-  const normalized = emptySets().map((_, i) => ({
-    home: sets[i]?.home ?? "",
-    away: sets[i]?.away ?? "",
-  }));
+  const dodgeball = sportOf(data) === "dodgeball";
+  const normalized = dodgeball
+    ? structuredClone(sets)
+    : emptySets().map((_, i) => ({
+        home: sets[i]?.home ?? "",
+        away: sets[i]?.away ?? "",
+      }));
   if (
+    !dodgeball &&
     normalized.some((s) =>
       ["home", "away"].some(
         (k) => s[k] !== "" && (!Number.isSafeInteger(s[k]) || s[k] < 0),
@@ -179,16 +220,20 @@ export function planMatchUpdate(data, id, sets, mode) {
   )
     throw new Error("점수는 0 이상의 정수로 입력해주세요.");
   const rules = m.rulesSnapshot || next.tournament.setRules;
-  const result = analyzeSets(normalized, rules);
+  const result = dodgeball
+    ? analyzeRounds(normalized)
+    : analyzeSets(normalized, rules);
+  if (dodgeball && result.errors.length) throw new Error(result.errors[0]);
   if (mode === "confirm" && !result.complete)
     throw new Error(
-      result.errors[0] || "먼저 3세트를 승리해야 결과를 확정할 수 있습니다.",
+      result.errors[0] ||
+        `먼저 3${dodgeball ? "판" : "세트"}를 승리해야 결과를 확정할 수 있습니다.`,
     );
   // Drafts may hold incomplete sets, but never scores after a completed match.
   if (mode !== "confirm" && result.errors.some((e) => e.includes("추가 세트")))
     throw new Error("승부가 결정된 뒤의 세트 점수를 지워주세요.");
   Object.assign(m, {
-    sets: normalized,
+    ...(dodgeball ? { rounds: normalized } : { sets: normalized }),
     status: mode === "confirm" ? "completed" : "live",
     winnerTeamId:
       mode === "confirm"
@@ -198,7 +243,7 @@ export function planMatchUpdate(data, id, sets, mode) {
         : null,
     confirmedAt: mode === "confirm" ? new Date().toISOString() : null,
     updatedAt: new Date().toISOString(),
-    rulesSnapshot: [...rules],
+    rulesSnapshot: dodgeball ? null : [...rules],
   });
   if (m.stage === "group") next.manualRankings[m.group] = [];
   return syncBracket(next);
@@ -226,16 +271,21 @@ export function planTeamsUpdate(data, teams) {
   let affected = [];
   if (regrouped) {
     affected = next.matches
-      .filter(
-        (m) =>
-          m.status !== "scheduled" ||
-          m.sets.some((s) => s.home !== "" || s.away !== ""),
-      )
+      .filter((m) => m.status !== "scheduled" || hasResultInput(m))
       .map((m) => m.id);
     next.manualRankings = { A: [], B: [] };
     const groups = createGroupMatches(teams).map((m) => {
       const old = data.matches.find((n) => n.id === m.id);
-      return { ...m, scheduledAt: old.scheduledAt, location: old.location };
+      const result = {
+        ...m,
+        scheduledAt: old.scheduledAt,
+        location: old.location,
+      };
+      if (sportOf(data) === "dodgeball") {
+        delete result.sets;
+        result.rounds = emptyRounds();
+      }
+      return result;
     });
     next.matches = [
       ...groups,
@@ -255,18 +305,21 @@ export function planTeamsUpdate(data, teams) {
     regrouped,
   };
 }
-export function createDemoData() {
-  let d = createInitialData();
+export function createDemoData(sport = "volleyball") {
+  let d = createInitialData(sport);
   d.isDemo = true;
   const winners = [true, true, true, true, true, true, true, true, true];
   d.matches
     .map((m) => m.id)
     .forEach((id, i) => {
-      const sets = emptySets();
+      const sets = sport === "dodgeball" ? emptyRounds() : emptySets();
       for (let j = 0; j < 3; j++)
-        sets[j] = winners[i]
-          ? { home: 25, away: 18 + j }
-          : { home: 18, away: 25 };
+        sets[j] =
+          sport === "dodgeball"
+            ? { winner: "home" }
+            : winners[i]
+              ? { home: 25, away: 18 + j }
+              : { home: 18, away: 25 };
       d = planMatchUpdate(d, id, sets, "confirm").data;
     });
   return d;

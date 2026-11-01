@@ -119,18 +119,57 @@ export function MatchDetail({ match, onClose }) {
         <>
           <div className="set-results">
             <div className="set-row set-head">
-              <span>세트</span>
+              <span>{match.rounds ? "판" : "세트"}</span>
               <strong>{teamLabel(data, match, "home")}</strong>
               <strong>{teamLabel(data, match, "away")}</strong>
             </div>
-            {match.sets.map((s, i) => (
+            {(match.rounds || match.sets).map((s, i) => (
               <div className="set-row" key={i}>
-                <span>{i + 1}세트</span>
-                <b className={s.home !== "" && s.home > s.away ? "blue" : ""}>
-                  {s.home === "" ? "–" : s.home}
+                <span>
+                  {i + 1}
+                  {match.rounds ? "판" : "세트"}
+                </span>
+                <b
+                  className={
+                    (
+                      match.rounds
+                        ? s.winner === "home"
+                        : s.home !== "" && s.home > s.away
+                    )
+                      ? "blue"
+                      : ""
+                  }
+                >
+                  {match.rounds
+                    ? s.winner === "home"
+                      ? "승리"
+                      : s.winner === "away"
+                        ? "패배"
+                        : "미진행"
+                    : s.home === ""
+                      ? "–"
+                      : s.home}
                 </b>
-                <b className={s.away !== "" && s.away > s.home ? "blue" : ""}>
-                  {s.away === "" ? "–" : s.away}
+                <b
+                  className={
+                    (
+                      match.rounds
+                        ? s.winner === "away"
+                        : s.away !== "" && s.away > s.home
+                    )
+                      ? "blue"
+                      : ""
+                  }
+                >
+                  {match.rounds
+                    ? s.winner === "away"
+                      ? "승리"
+                      : s.winner === "home"
+                        ? "패배"
+                        : "미진행"
+                    : s.away === ""
+                      ? "–"
+                      : s.away}
                 </b>
               </div>
             ))}

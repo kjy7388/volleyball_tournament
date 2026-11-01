@@ -1,4 +1,4 @@
-import { confirmedResult } from "./matchRules";
+import { matchResult as confirmedResult } from "./sportRules";
 export function calculateStandings(
   teams,
   matches,
@@ -6,6 +6,7 @@ export function calculateStandings(
   rules,
   manualOrder = [],
 ) {
+  const dodgeball = rules === null;
   const rows = teams
     .filter((t) => t.group === group)
     .map((team) => ({
@@ -40,7 +41,7 @@ export function calculateStandings(
       a.wins++;
       h.losses++;
     }
-    m.sets.forEach((s) => {
+    (m.sets || []).forEach((s) => {
       if (s.home === "" || s.away === "") return;
       h.pointsFor += s.home;
       h.pointsAgainst += s.away;
@@ -53,10 +54,12 @@ export function calculateStandings(
     r.pointDiff = r.pointsFor - r.pointsAgainst;
   });
   const compare = (a, b) =>
-    b.wins - a.wins || b.setDiff - a.setDiff || b.pointDiff - a.pointDiff;
+    b.wins - a.wins ||
+    b.setDiff - a.setDiff ||
+    (dodgeball ? 0 : b.pointDiff - a.pointDiff);
   rows.sort(compare);
   const ties = [];
-  for (let i = 0; i < rows.length;) {
+  for (let i = 0; i < rows.length; ) {
     let j = i + 1;
     while (j < rows.length && compare(rows[i], rows[j]) === 0) j++;
     if (j - i > 1) {
@@ -67,7 +70,7 @@ export function calculateStandings(
         .filter((m) => ids.includes(m.homeTeamId) && ids.includes(m.awayTeamId))
         .forEach((m) => headWins[m.winnerTeamId]++);
       tied.sort((a, b) => headWins[b.team.id] - headWins[a.team.id]);
-      for (let k = 0; k < tied.length;) {
+      for (let k = 0; k < tied.length; ) {
         let l = k + 1;
         while (
           l < tied.length &&
@@ -79,12 +82,15 @@ export function calculateStandings(
           const resolved =
             cluster.every((r) => manualOrder.includes(r.team.id)) &&
             new Set(manualOrder).size === manualOrder.length;
-          if (resolved)
+          if (resolved) {
+            cluster.forEach((r) => {
+              r.manuallyResolved = true;
+            });
             cluster.sort(
               (a, b) =>
                 manualOrder.indexOf(a.team.id) - manualOrder.indexOf(b.team.id),
             );
-          else {
+          } else {
             ties.push(cluster.map((r) => r.team.id));
             cluster.forEach((r) => {
               r.tied = true;

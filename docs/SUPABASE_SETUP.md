@@ -1,5 +1,7 @@
 # Supabase 연결·관리자 인증 설정
 
+> **통합 버전 안내:** 이 문서의 001·최초 관리자 생성 절차는 빈 DB를 처음 설정할 때만 사용합니다. 기존 프로젝트는 계정과 데이터를 유지하고 [MULTI_SPORT_UPGRADE.md](MULTI_SPORT_UPGRADE.md)의 백업·점검·승인 후 **002만** 적용하세요. 업그레이드 후 001을 다시 실행하지 마세요.
+
 대상: `bkfluqugazkimgipbrle` / GitHub `kjy7388/volleyball_tournament`.
 
 이 문서는 사용자가 검토·실행하는 절차입니다. 개발 작업 중 원격 SQL 실행, 실제 키 입력, 원격 DB 생성·변경, GitHub Push, Vercel 배포는 하지 않았습니다. 현재 로컬 코드와 SQL이 준비된 상태이며, 아래 설정을 마쳐야 실제 프로젝트에 연결됩니다.
