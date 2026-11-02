@@ -120,6 +120,7 @@ export async function monitor(context, page) {
         (u.pathname === "/rest/v1/rpc/get_public_tournament" ||
           u.pathname === "/rest/v1/rpc/get_sports_schema_version" ||
           u.pathname === "/rest/v1/rpc/get_volleyball_scoring_version" ||
+          u.pathname === "/rest/v1/rpc/get_competition_format_version" ||
           u.pathname === "/rest/v1/tournament_admins" ||
           u.pathname === "/rest/v1/matches");
       check(allowed, "허용하지 않은 운영 API 조회");
