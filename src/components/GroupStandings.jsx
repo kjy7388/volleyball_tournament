@@ -1,9 +1,12 @@
+import { useState } from "react";
 import { calculateStandings } from "../utils/standings";
 import { formatRatio } from "../utils/competitionRules";
 import { useTournament } from "../context/TournamentContext";
 import { TeamAvatar } from "./MatchCard";
+import TeamStatsModal from "./TeamStatsModal";
 export default function GroupStandings({ group }) {
   const { data, sport } = useTournament();
+  const [selectedTeamId, setSelectedTeamId] = useState(null);
   const result = calculateStandings(
     data.teams,
     data.matches,
@@ -12,22 +15,7 @@ export default function GroupStandings({ group }) {
     data.manualRankings[group],
   );
   const dodge = sport.key === "dodgeball";
-  const metrics = (r) => [
-    ["경기", r.played],
-    ["승", r.wins],
-    ["패", r.losses],
-    ["승점", r.matchPoints],
-    [dodge ? "승리 판" : "승리 세트", r.setsFor],
-    [dodge ? "패배 판" : "패배 세트", r.setsAgainst],
-    ["세트득실률", formatRatio(r.setsFor, r.setsAgainst)],
-    ...(dodge
-      ? [["잔여 인원수 차", r.remainingDiff]]
-      : [
-          ["득점", r.pointsFor],
-          ["실점", r.pointsAgainst],
-          ["점수득실률", formatRatio(r.pointsFor, r.pointsAgainst)],
-        ]),
-  ];
+  const selectedRow = result.rows.find((r) => r.team.id === selectedTeamId);
   return (
     <section className={"panel standings group-panel-" + group}>
       <div className="panel-head">
@@ -49,7 +37,7 @@ export default function GroupStandings({ group }) {
           <thead>
             <tr>
               <th>순위</th>
-              <th className="align-left">참가 반</th>
+              <th className="align-left standing-team-column">참가 반</th>
               <th className="standing-extra">경기</th>
               <th className="standing-extra">승</th>
               <th className="standing-extra">패</th>
@@ -81,7 +69,7 @@ export default function GroupStandings({ group }) {
                     {r.played ? (r.tied ? "=" : r.rank) : "–"}
                   </span>
                 </td>
-                <td className="align-left">
+                <td className="align-left standing-team-column">
                   <span className="table-team">
                     <TeamAvatar name={r.team.name} group={group} small />
                     <strong>{r.team.name}</strong>
@@ -89,17 +77,15 @@ export default function GroupStandings({ group }) {
                   {r.manuallyResolved && (
                     <small className="qualified-tag">관리자 확정</small>
                   )}
-                  <details className="standing-mobile-details">
-                    <summary>상세 기록</summary>
-                    <dl>
-                      {metrics(r).map(([label, value]) => (
-                        <div key={label}>
-                          <dt>{label}</dt>
-                          <dd>{String(value)}</dd>
-                        </div>
-                      ))}
-                    </dl>
-                  </details>
+                  <button
+                    type="button"
+                    className="standing-details-button"
+                    aria-label={`${r.team.name} 상세 기록`}
+                    aria-haspopup="dialog"
+                    onClick={() => setSelectedTeamId(r.team.id)}
+                  >
+                    상세 기록
+                  </button>
                 </td>
                 <td className="standing-extra">{r.played}</td>
                 <td className="standing-extra">{r.wins}</td>
@@ -145,6 +131,14 @@ export default function GroupStandings({ group }) {
             ? "각 조 1·2위가 준결승에 진출합니다."
             : "경기 결과 확정 후 승점과 순위가 자동 반영됩니다."}
       </div>
+      {selectedRow && (
+        <TeamStatsModal
+          row={selectedRow}
+          sport={sport}
+          group={group}
+          onClose={() => setSelectedTeamId(null)}
+        />
+      )}
     </section>
   );
 }

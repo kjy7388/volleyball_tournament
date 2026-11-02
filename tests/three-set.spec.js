@@ -114,10 +114,11 @@ for (const width of [320, 390])
       await expect(page.locator(".standings tbody tr")).toHaveCount(6);
       const row = page.locator(".standings tbody tr").first();
       await row.getByText("상세 기록", { exact: true }).click();
-      await expect(row).toContainText("승점");
-      await expect(row).toContainText("세트득실률");
-      await expect(row).toContainText(
-        sport === "volleyball" ? "점수득실률" : "잔여 인원수 차",
+      const stats = page.getByRole("dialog");
+      await expect(stats).toContainText("승점");
+      await expect(stats).toContainText("세트 득실률");
+      await expect(stats).toContainText(
+        sport === "volleyball" ? "점수 득실률" : "잔여 인원수 차",
       );
       expect(
         await page.evaluate(
@@ -128,5 +129,6 @@ for (const width of [320, 390])
         path: `test-results/three-set-${sport}-${width}.png`,
         fullPage: true,
       });
+      await page.keyboard.press("Escape");
     }
   });

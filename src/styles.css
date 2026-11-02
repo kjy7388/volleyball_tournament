@@ -3501,32 +3501,102 @@ td:last-child {
   background: #eff5ff;
   font-size: 16px;
 }
-.standing-mobile-details {
-  display: none;
+.standings th,
+.standings td {
+  padding-left: 6px;
+  padding-right: 6px;
 }
+.standings .standing-team-column {
+  min-width: 110px;
+}
+.standings .standing-team-column .table-team {
+  flex-wrap: nowrap;
+  gap: 6px;
+  min-width: max-content;
+}
+.standings .standing-team-column .table-team strong {
+  max-width: none;
+  white-space: nowrap;
+  overflow-wrap: normal;
+}
+.standings .table-team .team-avatar {
+  flex-shrink: 0;
+}
+.standing-details-button {
+  display: block;
+  margin-top: 5px;
+  padding: 6px 0;
+  border: 0;
+  background: transparent;
+  color: var(--blue);
+  font: inherit;
+  font-size: 10px;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.standing-details-button:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 3px;
+  border-radius: 3px;
+}
+.modal:has(.team-stats) {
+  padding: 20px;
+}
+.modal:has(.team-stats) .modal-head {
+  margin-bottom: 16px;
+}
+.team-stats-meta {
+  margin: -6px 0 14px;
+  color: #6b778c;
+  font-size: 13px;
+}
+.team-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-auto-rows: 1fr;
+  gap: 10px;
+  margin: 0;
+}
+.team-stat-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  min-height: 68px;
+  padding: 10px 8px;
+  text-align: center;
+  background: #f5f7fb;
+  border: 1px solid #e8edf5;
+  border-radius: 10px;
+}
+.team-stat-card dt {
+  max-width: 100%;
+  font-size: 11px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+  color: #6b778c;
+}
+.team-stat-card dd {
+  max-width: 100%;
+  margin: 4px 0 0;
+  font-size: 22px;
+  font-weight: 750;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+  font-variant-numeric: tabular-nums;
+}
+.team-stat-highlight { background: #eaf2ff; border-color: #cdddff; color: var(--blue); }
+.team-stat-highlight dt { color: var(--blue); }
+.team-stats-note { font-size: 12px; color: #6b778c; line-height: 1.7; }
 @media (max-width: 600px) {
   .standings .standing-extra {
     display: none;
   }
-  .standing-mobile-details {
-    display: block;
-    margin-top: 8px;
-    font-size: 10px;
-    white-space: normal;
-  }
-  .standing-mobile-details dl {
-    min-width: 75px;
-    margin: 8px 0;
-  }
-  .standing-mobile-details dl div {
-    display: flex;
-    justify-content: space-between;
-    gap: 5px;
-  }
-  .standing-mobile-details dd {
-    margin: 0;
-    overflow-wrap: anywhere;
-  }
+  .standings .standing-team-column { min-width: 88px; }
+  .modal:has(.team-stats) { padding: 16px; }
+  .team-stat-card dt { font-size: 10.5px; }
   .standings th,
   .standings td {
     padding-left: 5px;

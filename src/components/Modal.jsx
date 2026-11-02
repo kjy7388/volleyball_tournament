@@ -2,15 +2,18 @@ import { useEffect, useRef } from "react";
 import { X, AlertTriangle } from "lucide-react";
 import { useTournament } from "../context/TournamentContext";
 import { acquireScrollLock } from "../utils/scrollLock";
-export default function Modal({ title, children, onClose, wide = false }) {
+export default function Modal({ title, children, onClose, wide = false, preserveScroll = false }) {
   const { saving } = useTournament();
   const ref = useRef(null);
   useEffect(() => {
     const dialog = ref.current;
     const previous = dialog.ownerDocument.activeElement;
+    const view = dialog.ownerDocument.defaultView;
+    const position = { left: view.scrollX, top: view.scrollY, behavior: "instant" };
     const release = acquireScrollLock(dialog.ownerDocument);
     try {
       dialog.showModal();
+      if (preserveScroll) view.scrollTo(position);
     } catch (error) {
       release();
       throw error;
@@ -21,6 +24,9 @@ export default function Modal({ title, children, onClose, wide = false }) {
       } finally {
         release();
         if (previous?.isConnected) previous.focus({ preventScroll: true });
+        // Native dialog.close() can scroll its restored focus target into view
+        // before our explicit preventScroll focus restoration runs.
+        if (preserveScroll) view.scrollTo(position);
       }
     };
   }, []);

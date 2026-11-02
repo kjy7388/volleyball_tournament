@@ -145,19 +145,19 @@ smoke(
         "종목별 세부 규칙 안내 누락",
       );
       await open(page, audit, "/" + sport + "/groups", ".standings");
-      const details = page.locator(".standing-mobile-details").first();
-      await details.locator("summary").click();
+      await page.getByRole("button", { name: /상세 기록/ }).first().click();
+      const details = page.getByRole("dialog");
       check(
         await details.getByText("승점", { exact: true }).isVisible(),
         "모바일 상세 승점 누락",
       );
       check(
-        await details.getByText("세트득실률", { exact: true }).isVisible(),
+        await details.getByText("세트 득실률", { exact: true }).isVisible(),
         "모바일 상세 비율 누락",
       );
       check(
         await details
-          .getByText(sport === "volleyball" ? "점수득실률" : "잔여 인원수 차", {
+          .getByText(sport === "volleyball" ? "점수 득실률" : "잔여 인원수 차", {
             exact: true,
           })
           .isVisible(),
@@ -169,6 +169,7 @@ smoke(
         ),
         "모바일 상세 가로 넘침",
       );
+      await page.keyboard.press("Escape");
     }
   },
 );
