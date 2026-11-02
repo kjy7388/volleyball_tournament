@@ -50,7 +50,6 @@ export function validateData(d) {
         !t.name?.trim() ||
         !["A", "B"].includes(t.group) ||
         !Array.isArray(t.players) ||
-        t.players.length > 10 ||
         t.players.some((p) => !p.id || !p.name?.trim() || p.teamId !== t.id),
     )
   )
@@ -282,8 +281,6 @@ export function planTeamsUpdate(data, teams) {
     throw new Error("서로 다른 반 이름 6개를 입력해주세요.");
   if (["A", "B"].some((g) => teams.filter((t) => t.group === g).length !== 3))
     throw new Error("A·B조에 각각 3개 반을 배정해주세요.");
-  if (teams.some((t) => t.players.length > 10))
-    throw new Error("선수 정원은 반별 10명입니다.");
   if (teams.some((t) => t.players.some((p) => !p.name.trim())))
     throw new Error("빈 선수 이름을 입력하거나 저장할 수 없습니다.");
   const next = structuredClone(data);

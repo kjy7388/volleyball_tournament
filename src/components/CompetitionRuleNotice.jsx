@@ -3,8 +3,8 @@ export default function CompetitionRuleNotice({ dodgeball = false, stage }) {
     <div className="notice competition-rules">
       <strong>
         {dodgeball
-          ? "피구 3판 2선승제 · 각 판 10분 · 반별 정원 10명"
-          : "배구 3세트 2선승제 · 기본 모든 세트 15점 · 반별 정원 10명"}
+          ? "피구 3판 2선승제 · 각 판 10분 · 경기 운영 기준 10명 · 등록 인원 제한 없음"
+          : "배구 3세트 2선승제 · 기본 모든 세트 15점 · 경기 운영 기준 10명 · 등록 인원 제한 없음"}
       </strong>
       <p>
         {dodgeball

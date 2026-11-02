@@ -221,7 +221,7 @@ for (const sport of sports) {
     await card.locator(".player-input input").first().fill("수정선수");
     await expect(
       card.getByRole("button", { name: "선수 추가", exact: true }),
-    ).toBeDisabled();
+    ).toBeEnabled();
     await makeRosterSpace(page, card);
     await card.getByRole("button", { name: "선수 추가", exact: true }).click();
     await card.locator(".player-input input").last().fill("추가선수");

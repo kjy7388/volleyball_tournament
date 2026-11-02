@@ -105,8 +105,8 @@ export default function AdminDashboard() {
         </section>
       </div>
       <div className="notice">
-        선수 정원: {data.teams.filter((t) => t.players.length === 10).length} /
-        6개 반 충족 · 반별 10명
+        등록 선수 {data.teams.reduce((sum, t) => sum + t.players.length, 0)}명 ·
+        경기 운영 기준 반별 10명 · 등록 인원 제한 없음
       </div>
       <div className="two-columns">
         <GroupStandings group="A" />

@@ -117,7 +117,7 @@ it("standings use only confirmed group results and accumulate survivors", () => 
     ),
   ).toBe(true);
 });
-it("ten-player maximum preserves original and permits short preparation roster", () => {
+it("registration has no count cap, preserves original, and accepts short rosters", () => {
   const d = createInitialData();
   const teams = structuredClone(d.teams);
   teams[0].players.pop();
@@ -128,6 +128,6 @@ it("ten-player maximum preserves original and permits short preparation roster",
       { id: "extra2", teamId: "team-1", name: "추가2" },
     ],
   );
-  expect(() => planTeamsUpdate(d, teams)).toThrow("10");
+  expect(planTeamsUpdate(d, teams).data.teams[0].players.length).toBe(11);
   expect(d.teams[0].players.length).toBe(10);
 });

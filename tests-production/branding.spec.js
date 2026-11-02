@@ -9,6 +9,7 @@ smoke(
       ["get_volleyball_scoring_version", 4],
       ["get_competition_format_version", 4],
       ["get_sports_schema_version", 2],
+      ["get_roster_registration_version", 5],
     ]) {
       const response = await audit.api(`/rest/v1/rpc/${name}`);
       check(
@@ -128,7 +129,8 @@ smoke(
         "새 경기 방식 안내 누락",
       );
       check(
-        rules.includes("반별 정원 10명") &&
+        rules.includes("경기 운영 기준 10명") &&
+          rules.includes("등록 인원 제한 없음") &&
           rules.includes("2:0 승리 3점") &&
           rules.includes("2:1 승리 2점") &&
           rules.includes("1:2 패배 1점") &&

@@ -55,6 +55,15 @@ export const test = base.extend({
         ),
       );
       await db.exec(
+        readFileSync(
+          new URL(
+            "../supabase/migrations/005_unlimited_roster_registration.sql",
+            import.meta.url,
+          ),
+          "utf8",
+        ),
+      );
+      await db.exec(
         `insert into public.tournament_admins(user_id) values('${adminId}');`,
       );
       let chain = Promise.resolve();
@@ -173,6 +182,12 @@ export const test = base.extend({
             try {
               const value = await serial(async () => {
                 await role(uid);
+                if (name === "get_roster_registration_version")
+                  return (
+                    await db.query(
+                      "select public.get_roster_registration_version() data",
+                    )
+                  ).rows[0].data;
                 if (name === "is_tournament_admin")
                   return (
                     await db.query("select public.is_tournament_admin() data")

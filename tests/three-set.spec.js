@@ -86,14 +86,14 @@ test("피구 잔여 인원·동률 수동 지정·2:1 승점·모달 스크롤 �
   await page.keyboard.press("Escape");
   expect(await page.evaluate(() => document.body.style.overflow)).toBe("");
 });
-test("선수 10명 제한과 부족 인원 준비 안내", async ({ page }) => {
+test("등록 인원 안내와 10명 이상 추가·삭제 관리", async ({ page }) => {
   await login(page);
   await page.goto("/admin/volleyball/teams");
   const card = page.locator(".team-editor").first();
-  await expect(card).toContainText("정원 충족");
-  await expect(card.getByRole("button", { name: "선수 추가" })).toBeDisabled();
+  await expect(card).toContainText("등록 선수 10명");
+  await expect(card.getByRole("button", { name: "선수 추가" })).toBeEnabled();
   await makeRosterSpace(page, card);
-  await expect(card).toContainText("1명 부족");
+  await expect(card).toContainText("등록 선수 9명");
   await expect(card.getByRole("button", { name: "선수 추가" })).toBeEnabled();
   await page
     .getByRole("button", { name: "변경 사항 저장", exact: true })

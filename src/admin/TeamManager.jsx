@@ -80,14 +80,11 @@ export default function TeamManager() {
             <div className="team-editor-head">
               <TeamAvatar name={t.name} group={t.group} />
               <h2>{t.name || "이름 미입력"}</h2>
-              <span className="muted">{t.players.length} / 10명</span>
+              <span className="muted">{t.players.length}명</span>
             </div>
-            <p className={t.players.length === 10 ? "muted" : "warning"}>
-              {t.players.length < 10
-                ? `${10 - t.players.length}명 부족 · 준비 중 임시 저장 가능`
-                : t.players.length > 10
-                  ? "정원 초과 · 명단을 보존한 채 확인이 필요합니다."
-                  : "선수 정원 충족"}
+            <p className="muted">
+              등록 선수 {t.players.length}명 · 경기 운영 기준 10명 · 등록 인원
+              제한 없음
             </p>
             <div className="form-row">
               <label>
@@ -151,7 +148,6 @@ export default function TeamManager() {
             )}
             <button
               className="add-player"
-              disabled={t.players.length >= 10}
               onClick={() =>
                 update(t.id, (old) => ({
                   ...old,

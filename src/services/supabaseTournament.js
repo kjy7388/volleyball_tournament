@@ -31,6 +31,7 @@ export function dataError(error) {
 }
 export function createSupabaseRepository(client, tournamentId = TOURNAMENT_ID) {
   let supported = false;
+  let unlimitedRosterReady = false;
   let volleyballScoringReady = false;
   const formatCheck = async () => {
     if (volleyballScoringReady) return;
@@ -75,6 +76,19 @@ export function createSupabaseRepository(client, tournamentId = TOURNAMENT_ID) {
       if (snapshot.tournament.id !== tournamentId)
         throw new Error("이 앱의 대회 ID와 백업 파일의 대회 ID가 다릅니다.");
       await formatCheck();
+      if (
+        !unlimitedRosterReady &&
+        snapshot.teams.some((t) => t.players.length > 10)
+      ) {
+        const cap = await client.rpc("get_roster_registration_version");
+        if (cap.error && !["42883", "PGRST202"].includes(cap.error.code))
+          throw dataError(cap.error);
+        if (cap.error || cap.data !== 5)
+          throw new Error(
+            "선수 11명 이상 저장에는 005_unlimited_roster_registration.sql 적용이 필요합니다. 입력은 보존됩니다. 승인된 절차로 적용한 뒤 재시도해주세요.",
+          );
+        unlimitedRosterReady = true;
+      }
       const { data, error } = await client.rpc("save_tournament", {
         p_snapshot: snapshot,
         p_expected_revision: initialize ? null : snapshot.revision,

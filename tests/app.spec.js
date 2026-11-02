@@ -120,7 +120,7 @@ test("반 이름·선수 추가/수정/삭제와 조 편성 검증", async ({
   await page.goto("/admin/teams");
   const card = page.locator(".team-editor").first();
   await card.getByLabel("반 이름").fill("테스트반");
-  await expect(card.getByRole("button", { name: "선수 추가" })).toBeDisabled();
+  await expect(card.getByRole("button", { name: "선수 추가" })).toBeEnabled();
   await makeRosterSpace(page, card);
   await card.getByRole("button", { name: "선수 추가" }).click();
   await card.locator(".player-input input").last().fill("새 선수");
@@ -157,7 +157,9 @@ test("반 이름·선수 추가/수정/삭제와 조 편성 검증", async ({
 });
 test("설정 변경과 일정 필터 및 상세 결과", async ({ page, backend }) => {
   await page.goto("/admin/settings");
-  await expect(page.locator(".competition-rules")).toContainText("2:0 승리 3점");
+  await expect(page.locator(".competition-rules")).toContainText(
+    "2:0 승리 3점",
+  );
   await page.getByLabel("대회명", { exact: true }).fill("우리 학교 배구대회");
   await page.getByLabel("시작일").fill("2026-11-24");
   await page.getByLabel("종료일").fill("2026-12-14");

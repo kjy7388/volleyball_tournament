@@ -1,7 +1,7 @@
 export const FORMAT_VERSION = 4;
 export const MAX_ROUNDS = 3;
 export const WINS_REQUIRED = 2;
-export const ROSTER_LIMIT = 10;
+export const MATCH_PLAYER_COUNT = 10;
 export const DEFAULT_TARGETS = [15, 15, 15];
 export const usesDeuce = (stage = "group") =>
   ["semifinal", "final"].includes(stage);
