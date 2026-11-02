@@ -1,7 +1,7 @@
 import { emptyRounds } from "../utils/dodgeballRules";
 import { SPORTS } from "./sports";
 import { emptySets } from "../utils/matchRules";
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2;
 export function createGroupMatches(teams) {
   let number = 0;
   return ["A", "B"].flatMap((group) => {
@@ -45,7 +45,7 @@ export function createInitialData(sport = "volleyball") {
     id: `team-${i + 1}`,
     name: `${i + 1}반`,
     group: i < 3 ? "A" : "B",
-    players: Array.from({ length: 8 }, (_, j) => ({
+    players: Array.from({ length: 10 }, (_, j) => ({
       id: `player-${i + 1}-${j + 1}`,
       teamId: `team-${i + 1}`,
       name: `예시선수 ${i + 1}-${j + 1}`,
@@ -68,7 +68,7 @@ export function createInitialData(sport = "volleyball") {
         semifinal: "홍신관",
         final: "홍신관",
       },
-      setRules: [25, 25, 25, 25, 15],
+      setRules: [15, 15, 15],
       status: "upcoming",
     },
     teams,

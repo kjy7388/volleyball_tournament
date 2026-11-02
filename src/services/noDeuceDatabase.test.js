@@ -1,10 +1,15 @@
 import { beforeAll, afterAll, it, expect } from "vitest";
 import { PGlite } from "@electric-sql/pglite";
 import { readFileSync } from "node:fs";
-import { createInitialData } from "../data/initialTournament";
-import { createDemoData } from "./tournamentStorage";
-import { syncBracket } from "../utils/bracketLogic";
-import { emptySets } from "../utils/matchRules";
+import { createInitialData, createDemoData, emptySets } from "./legacyTestData";
+
+const syncBracket = (data) => {
+  data.tournament.status = data.matches.some((m) => m.status !== "scheduled")
+    ? "ongoing"
+    : "upcoming";
+  return { data };
+};
+
 const admin = "11111111-1111-4111-8111-111111111111";
 const sql = (n) =>
   readFileSync(

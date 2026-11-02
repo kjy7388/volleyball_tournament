@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import CompetitionRuleNotice from "../components/CompetitionRuleNotice";
 import { Save, MapPin, CalendarDays, SlidersHorizontal } from "lucide-react";
 import { useTournament } from "../context/TournamentContext";
 import { PageTitle } from "../components/Common";
@@ -108,6 +109,7 @@ export default function TournamentSettings() {
           </button>
         }
       />
+      <CompetitionRuleNotice dodgeball={t.id === "dodgeball-cup"} />
       <section className="panel settings-panel">
         <h2>
           <SlidersHorizontal size={20} />
@@ -219,17 +221,17 @@ export default function TournamentSettings() {
             ))}
           </div>
           <p className="muted">
-            듀스 없음 · 목표 점수 선취(1점 차 허용) · 5세트 3선승제. 기존 경기의
-            목표 점수는 유지합니다. 목표 점수를 초과한 결과는 저장할 수
-            없습니다.
+            3세트 2선승제 · 기본 모든 세트 15점. 조별리그 듀스 없음,
+            준결승·결승은 2점 차 듀스를 적용합니다. 듀스 점수 상한은 없습니다.
+            기존 경기 목표 점수 기록은 유지합니다.
           </p>
         </section>
       ) : (
         <section className="panel settings-panel">
           <h2>피구 경기 규칙</h2>
           <p>
-            5판 3선승제 · 각 판의 승리 반 선택 · 무승부 없음 · 3승 이후 판
-            미진행
+            3판 2선승제 · 각 판 10분 · 잔여 인원 0~10명 입력 · 동률은 연장전
+            또는 재경기 후 수동 승자 지정 · 2승 이후 미진행
           </p>
         </section>
       )}

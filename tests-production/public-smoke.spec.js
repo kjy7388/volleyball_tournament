@@ -33,10 +33,10 @@ const snapshots = async (api) => {
       d.matches.every((m) =>
         sport === "dodgeball"
           ? Array.isArray(m.rounds) &&
-            m.rounds.length === 5 &&
+            m.rounds.length === 3 &&
             !Object.hasOwn(m, "sets")
           : Array.isArray(m.sets) &&
-            m.sets.length === 5 &&
+            m.sets.length === 3 &&
             !Object.hasOwn(m, "rounds"),
       ),
       "공개 응답의 종목별 기록 모델 불일치",
@@ -138,11 +138,14 @@ for (const width of [1440, 390, 320])
               (await page.locator(".standings tbody tr").count()) === 6,
               "조별 순위표 반 수 오류",
             );
-            const text = await page.locator(".standings").first().innerText();
+            const text = await page.locator(".standings").first().textContent();
             check(
-              sport === "dodgeball"
-                ? text.includes("판 득실차") && !text.includes("득실점")
-                : text.includes("세트 득실"),
+              text.includes("승점") &&
+                text.includes("세트득실률") &&
+                (sport === "dodgeball"
+                  ? text.includes("잔여 인원수 차") &&
+                    !text.includes("점수득실률")
+                  : text.includes("점수득실률")),
               "종목별 순위표 항목 오류",
             );
           }

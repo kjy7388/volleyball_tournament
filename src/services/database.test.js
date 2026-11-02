@@ -60,6 +60,15 @@ beforeAll(async () => {
     ),
   );
   await db.exec(
+    readFileSync(
+      new URL(
+        "../../supabase/migrations/004_three_set_points_and_survivors.sql",
+        import.meta.url,
+      ),
+      "utf8",
+    ),
+  );
+  await db.exec(
     `insert into public.tournament_admins(user_id) values ('${adminId}');`,
   );
 }, 60000);
@@ -71,16 +80,7 @@ describe("실제 로컬 PostgreSQL 마이그레이션·RLS·트랜잭션 (원격
     await db.exec(
       readFileSync(
         new URL(
-          "../../supabase/migrations/002_multi_sport_tournament.sql",
-          import.meta.url,
-        ),
-        "utf8",
-      ),
-    );
-    await db.exec(
-      readFileSync(
-        new URL(
-          "../../supabase/migrations/003_volleyball_no_deuce.sql",
+          "../../supabase/migrations/004_three_set_points_and_survivors.sql",
           import.meta.url,
         ),
         "utf8",
@@ -118,14 +118,14 @@ describe("실제 로컬 PostgreSQL 마이그레이션·RLS·트랜잭션 (원격
       save(createInitialData(), { initialize: true }),
     ).rejects.toThrow("permission denied");
   });
-  it("관리자가 최초 1회 등록, 6팀·48선수·9경기·45세트 저장", async () => {
+  it("관리자가 최초 1회 등록, 6팀·60선수·9경기·27세트 저장", async () => {
     await as("authenticated", adminId);
     const d = await save(createInitialData(), { initialize: true });
     expect(d.revision).toBe(1);
     expect(d.teams).toHaveLength(6);
-    expect(d.teams.flatMap((t) => t.players)).toHaveLength(48);
+    expect(d.teams.flatMap((t) => t.players)).toHaveLength(60);
     expect(d.matches).toHaveLength(9);
-    expect(d.matches.every((m) => m.sets.length === 5)).toBe(true);
+    expect(d.matches.every((m) => m.sets.length === 3)).toBe(true);
     await expect(
       save(createInitialData(), { initialize: true }),
     ).rejects.toThrow("ALREADY_EXISTS");
@@ -149,7 +149,7 @@ describe("실제 로컬 PostgreSQL 마이그레이션·RLS·트랜잭션 (원격
   it("잘못된 점수·위조 승자·결선 대진을 서버에서 차단", async () => {
     const d = await load();
     const bad = structuredClone(d);
-    bad.matches[0].sets[0] = { home: 26, away: 24 };
+    bad.matches[0].sets[0] = { home: 16, away: 14 };
     await expect(save(bad)).rejects.toThrow("SCORE_OVER_TARGET");
     const win = structuredClone(d);
     win.matches[0].winnerTeamId = "team-2";

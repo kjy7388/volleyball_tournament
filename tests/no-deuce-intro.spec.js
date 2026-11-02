@@ -119,19 +119,19 @@ async function confirm(page) {
     .click();
   await expect(page.locator("dialog")).toHaveCount(0);
 }
-test("24:24 임시 저장·25:24 확정·초과 입력 차단·스크롤 복원", async ({
+test("14:14 임시 저장·15:14 확정·초과 입력 차단·스크롤 복원", async ({
   page,
   backend,
 }) => {
   await login(page);
   await page.goto("/admin/volleyball/matches");
   let dialog = await selectMatch(page);
-  await fillSet(dialog, 0, 26, 24);
+  await fillSet(dialog, 0, 16, 14);
   await expect(
     dialog.getByRole("button", { name: "임시 저장", exact: true }),
   ).toBeDisabled();
-  await expect(dialog.locator(".validation-errors")).toContainText("목표 25점");
-  await fillSet(dialog, 0, 24, 24);
+  await expect(dialog.locator(".validation-errors")).toContainText("목표 15점");
+  await fillSet(dialog, 0, 14, 14);
   await expect(dialog).toContainText("진행 중");
   await expect(
     dialog.getByRole("button", { name: "경기 결과 확정", exact: true }),
@@ -143,9 +143,9 @@ test("24:24 임시 저장·25:24 확정·초과 입력 차단·스크롤 복원"
     winnerTeamId: null,
   });
   dialog = await selectMatch(page);
-  for (let i = 0; i < 3; i++) await fillSet(dialog, i, 25, 24);
+  for (let i = 0; i < 2; i++) await fillSet(dialog, i, 15, 14);
   await expect(
-    dialog.locator(".score-input-row").nth(3).locator("input").first(),
+    dialog.locator(".score-input-row").nth(2).locator("input").first(),
   ).toBeDisabled();
   await confirm(page);
   expect((await backend.snapshot()).matches[0]).toMatchObject({
@@ -162,7 +162,7 @@ test("24:24 임시 저장·25:24 확정·초과 입력 차단·스크롤 복원"
   await page.mouse.wheel(0, 500);
   await expect.poll(() => page.evaluate(() => scrollY)).toBeGreaterThan(0);
 });
-test("5세트 14:14 임시 저장·16:14 차단·15:14로 3:2 확정", async ({
+test("3세트 14:14 임시 저장·16:14 차단·15:14로 2:1 확정", async ({
   page,
   backend,
 }) => {
@@ -170,10 +170,8 @@ test("5세트 14:14 임시 저장·16:14 차단·15:14로 3:2 확정", async ({
   await page.goto("/admin/volleyball/matches");
   let dialog = await selectMatch(page);
   for (const [i, score] of [
-    [25, 24],
-    [24, 25],
-    [25, 24],
-    [24, 25],
+    [15, 14],
+    [14, 15],
     [14, 14],
   ].entries())
     await fillSet(dialog, i, ...score);
@@ -183,17 +181,17 @@ test("5세트 14:14 임시 저장·16:14 차단·15:14로 3:2 확정", async ({
   await dialog.getByRole("button", { name: "임시 저장", exact: true }).click();
   await expect(page.locator("dialog")).toHaveCount(0);
   dialog = await selectMatch(page);
-  await fillSet(dialog, 4, 16, 14);
+  await fillSet(dialog, 2, 16, 14);
   await expect(
     dialog.getByRole("button", { name: "임시 저장", exact: true }),
   ).toBeDisabled();
-  await fillSet(dialog, 4, 15, 14);
+  await fillSet(dialog, 2, 15, 14);
   await confirm(page);
   const saved = (await backend.snapshot()).matches[0];
   expect(saved.status).toBe("completed");
-  expect(saved.sets[4]).toEqual({ home: 15, away: 14 });
+  expect(saved.sets[2]).toEqual({ home: 15, away: 14 });
 });
-test("배구 25:24로 9경기 완주·순위/결선/우승·피구 독립성", async ({
+test("배구 15:14로 9경기 완주·순위/결선/우승·피구 독립성", async ({
   page,
   backend,
 }) => {
@@ -203,7 +201,8 @@ test("배구 25:24로 9경기 완주·순위/결선/우승·피구 독립성", a
   await page.goto("/admin/volleyball/matches");
   for (let number = 1; number <= 9; number++) {
     const dialog = await selectMatch(page, number);
-    for (let i = 0; i < 3; i++) await fillSet(dialog, i, 25, 24);
+    for (let i = 0; i < 2; i++)
+      await fillSet(dialog, i, 15, number > 6 ? 13 : 14);
     await confirm(page);
   }
   const d = await backend.snapshot();

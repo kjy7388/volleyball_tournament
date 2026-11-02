@@ -35,7 +35,7 @@ export default function VolleyballScoreEditor({
               type="number"
               inputMode="numeric"
               min="0"
-              max={rules[i]}
+              max={match.stage === "group" ? rules[i] : undefined}
               step="1"
               aria-label={`${i + 1}세트 ${teamLabel(data, match, "home")} 점수`}
               value={s.home}

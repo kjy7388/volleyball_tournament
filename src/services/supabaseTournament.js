@@ -32,8 +32,20 @@ export function dataError(error) {
 export function createSupabaseRepository(client, tournamentId = TOURNAMENT_ID) {
   let supported = false;
   let volleyballScoringReady = false;
+  const formatCheck = async () => {
+    if (volleyballScoringReady) return;
+    const c = await client.rpc("get_competition_format_version");
+    if (c.error && !["42883", "PGRST202"].includes(c.error.code))
+      throw dataError(c.error);
+    if (c.error || c.data !== 4)
+      throw new Error(
+        "004_three_set_points_and_survivors.sql 마이그레이션 적용이 필요합니다. 기존 경기와 선수는 삭제하지 말고 전환 점검·백업 후 승인된 절차를 따르세요.",
+      );
+    volleyballScoringReady = true;
+  };
   return {
     async load() {
+      await formatCheck();
       if (tournamentId === "dodgeball-cup" && !supported) {
         const capability = await client.rpc("get_sports_schema_version");
         if (
@@ -62,19 +74,7 @@ export function createSupabaseRepository(client, tournamentId = TOURNAMENT_ID) {
       validateData(snapshot);
       if (snapshot.tournament.id !== tournamentId)
         throw new Error("이 앱의 대회 ID와 백업 파일의 대회 ID가 다릅니다.");
-      if (tournamentId === "volleyball-cup" && !volleyballScoringReady) {
-        const capability = await client.rpc("get_volleyball_scoring_version");
-        if (
-          capability.error &&
-          !["42883", "PGRST202"].includes(capability.error.code)
-        )
-          throw dataError(capability.error);
-        if (capability.error || capability.data !== 3)
-          throw new Error(
-            "배구 저장에는 003_volleyball_no_deuce.sql 적용이 필요합니다. 사용자 승인 후 서버 규칙을 먼저 적용해주세요.",
-          );
-        volleyballScoringReady = true;
-      }
+      await formatCheck();
       const { data, error } = await client.rpc("save_tournament", {
         p_snapshot: snapshot,
         p_expected_revision: initialize ? null : snapshot.revision,

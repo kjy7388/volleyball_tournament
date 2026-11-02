@@ -2,11 +2,12 @@ import { smoke, check, open, SPORTS } from "./readOnly.js";
 
 const title = "화곡중학교 배구·피구 대진표";
 smoke(
-  "운영 배구 규칙 버전 3·통합 버전 2 Data API 조회",
+  "운영 배구 규칙 버전 4·통합 버전 2 Data API 조회",
   async ({ page, audit }) => {
     await open(page, audit, "/volleyball", ".hero");
     for (const [name, expected] of [
-      ["get_volleyball_scoring_version", 3],
+      ["get_volleyball_scoring_version", 4],
+      ["get_competition_format_version", 4],
       ["get_sports_schema_version", 2],
     ]) {
       const response = await audit.api(`/rest/v1/rpc/${name}`);
@@ -110,3 +111,62 @@ for (const width of [320, 375, 390, 430, 1440])
       }
     },
   );
+
+smoke(
+  "운영 신규 경기 규칙·승점·정원·모바일 상세 지표",
+  async ({ page, audit }) => {
+    await page.setViewportSize({ width: 390, height: 900 });
+    for (const sport of SPORTS) {
+      await open(page, audit, "/" + sport, ".hero");
+      const rules = (
+        await page.locator(".competition-rules").innerText()
+      ).replace(/\s+/g, " ");
+      check(
+        rules.includes(
+          sport === "volleyball" ? "3세트 2선승제" : "3판 2선승제",
+        ),
+        "새 경기 방식 안내 누락",
+      );
+      check(
+        rules.includes("반별 정원 10명") &&
+          rules.includes("2:0 승리 3점") &&
+          rules.includes("2:1 승리 2점") &&
+          rules.includes("1:2 패배 1점") &&
+          rules.includes("0:2 패배 0점"),
+        "정원 또는 승점 안내 누락",
+      );
+      check(
+        sport === "volleyball"
+          ? rules.includes("기본 모든 세트 15점") &&
+              rules.includes("준결승·결승 2점 차 듀스")
+          : rules.includes("각 판 10분") && rules.includes("잔여 인원"),
+        "종목별 세부 규칙 안내 누락",
+      );
+      await open(page, audit, "/" + sport + "/groups", ".standings");
+      const details = page.locator(".standing-mobile-details").first();
+      await details.locator("summary").click();
+      check(
+        await details.getByText("승점", { exact: true }).isVisible(),
+        "모바일 상세 승점 누락",
+      );
+      check(
+        await details.getByText("세트득실률", { exact: true }).isVisible(),
+        "모바일 상세 비율 누락",
+      );
+      check(
+        await details
+          .getByText(sport === "volleyball" ? "점수득실률" : "잔여 인원수 차", {
+            exact: true,
+          })
+          .isVisible(),
+        "모바일 종목별 상세 지표 누락",
+      );
+      check(
+        await page.evaluate(
+          () => document.documentElement.scrollWidth <= innerWidth,
+        ),
+        "모바일 상세 가로 넘침",
+      );
+    }
+  },
+);

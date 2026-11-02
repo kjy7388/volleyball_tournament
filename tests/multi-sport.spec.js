@@ -1,3 +1,5 @@
+import { fillRound, makeRosterSpace } from "./resultHelpers.js";
+import { roundResult } from "../src/utils/testResults.js";
 import { test, expect, login } from "./fixtures.js";
 import { createInitialData } from "../src/data/initialTournament.js";
 import {
@@ -195,10 +197,8 @@ test("피구 9경기 확정→순위→준결승→결승→우승, 다른 브�
   const before = await backend.snapshot();
   for (let number = 1; number <= 9; number++) {
     const dialog = await openMatch(page, number);
-    for (let i = 1; i <= 5; i++)
-      await dialog
-        .getByLabel(i + "판 승리 반", { exact: true })
-        .selectOption(i % 2 === 1 ? "home" : "away");
+    for (let i = 1; i <= 3; i++)
+      await fillRound(dialog, i, i % 2 === 1 ? "home" : "away");
     await expect(dialog.locator(".editor-score")).toContainText("판 스코어");
     await confirm(page);
     expect(
@@ -233,7 +233,7 @@ test("피구 9경기 확정→순위→준결승→결승→우승, 다른 브�
   await expect(publicPage.locator("dialog .set-results")).toContainText("승리");
   await other.close();
 });
-test("피구 앞 판 변경·3승 후 비활성·임시 저장·실패·취소·확정 취소·재확정", async ({
+test("피구 앞 판 변경·2승 후 비활성·임시 저장·실패·취소·확정 취소·재확정", async ({
   page,
   backend,
 }) => {
@@ -241,16 +241,13 @@ test("피구 앞 판 변경·3승 후 비활성·임시 저장·실패·취소·
   await login(page);
   await page.goto("/admin/dodgeball/matches");
   let dialog = await openMatch(page);
-  for (let i = 1; i <= 3; i++)
-    await dialog
-      .getByLabel(i + "판 승리 반", { exact: true })
-      .selectOption("home");
+  for (let i = 1; i <= 2; i++) await fillRound(dialog, i, "home");
   await expect(
-    dialog.getByLabel("4판 승리 반", { exact: true }),
+    dialog.getByLabel("3판 승리 반", { exact: true }),
   ).toBeDisabled();
-  await dialog.getByLabel("1판 승리 반", { exact: true }).selectOption("away");
+  await fillRound(dialog, 1, "away");
   await expect(dialog.getByLabel("2판 승리 반", { exact: true })).toHaveValue(
-    "",
+    "home",
   );
   await expect(
     dialog.getByRole("button", { name: "경기 결과 확정" }),
@@ -263,10 +260,7 @@ test("피구 앞 판 변경·3승 후 비활성·임시 저장·실패·취소·
   ).toHaveText("0");
   await page.goto("/admin/dodgeball/matches");
   dialog = await openMatch(page);
-  for (let i = 1; i <= 3; i++)
-    await dialog
-      .getByLabel(i + "판 승리 반", { exact: true })
-      .selectOption("home");
+  for (let i = 1; i <= 2; i++) await fillRound(dialog, i, "home");
   await dialog
     .getByRole("button", { name: "경기 결과 확정", exact: true })
     .click();
@@ -365,8 +359,8 @@ test("피구 순환 동률 관리자 확정·일반 화면 표시·진행 결선
     d = planMatchUpdate(
       d,
       m.id,
-      Array.from({ length: 5 }, (_, i) => ({
-        winner: i < 3 ? (m.id === "g-A-2" ? "away" : "home") : null,
+      Array.from({ length: 3 }, (_, i) => ({
+        ...roundResult(i < 2 ? (m.id === "g-A-2" ? "away" : "home") : null),
       })),
       "confirm",
     ).data;
@@ -384,10 +378,7 @@ test("피구 순환 동률 관리자 확정·일반 화면 표시·진행 결선
   await backend.replace(createDemoData("dodgeball"));
   await page.goto("/admin/dodgeball/matches");
   const dialog = await openMatch(page);
-  for (let i = 1; i <= 3; i++)
-    await dialog
-      .getByLabel(i + "판 승리 반", { exact: true })
-      .selectOption("away");
+  for (let i = 1; i <= 2; i++) await fillRound(dialog, i, "away");
   await dialog.getByRole("button", { name: "경기 결과 확정" }).click();
   await expect(page.locator("dialog").last()).toContainText("준결승");
   await expect(page.locator("dialog").last()).toContainText("결승");

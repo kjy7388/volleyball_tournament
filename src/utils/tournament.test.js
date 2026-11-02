@@ -13,7 +13,7 @@ import {
 } from "../services/tournamentStorage";
 const score = (homeWin = true) =>
   emptySets().map((s, i) =>
-    i < 3 ? (homeWin ? { home: 25, away: 20 } : { home: 20, away: 25 }) : s,
+    i < 2 ? (homeWin ? { home: 15, away: 10 } : { home: 10, away: 15 }) : s,
   );
 const rank = (d, g = "A") =>
   calculateStandings(
@@ -25,60 +25,58 @@ const rank = (d, g = "A") =>
   );
 describe("세트 규칙", () => {
   it.each([
-    [25, 23, true],
-    [25, 24, true],
-    [26, 24, false],
-    [27, 25, false],
-    [26, 23, false],
-    [24, 22, false],
-    [25, 0, true],
-    [25, 25, false],
-    [-1, 25, false],
-    [1.5, 25, false],
-    ["25", 23, false],
-    [Infinity, 25, false],
+    [15, 13, true],
+    [15, 14, true],
+    [16, 14, false],
+    [17, 15, false],
+    [16, 13, false],
+    [14, 12, false],
+    [15, 0, true],
+    [15, 15, false],
+    [-1, 15, false],
+    [1.5, 15, false],
+    ["15", 13, false],
+    [Infinity, 15, false],
   ])("%s:%s 점수 검증", (home, away, valid) =>
     expect(analyzeSets([{ home, away }]).errors.length === 0).toBe(valid),
   );
-  it("5세트 목표 15점 선취와 1점 차 승리", () => {
+  it("3세트 목표 15점 선취와 1점 차 승리", () => {
     const sets = [
-      { home: 25, away: 20 },
-      { home: 20, away: 25 },
-      { home: 25, away: 20 },
-      { home: 20, away: 25 },
+      { home: 15, away: 10 },
+      { home: 10, away: 15 },
       { home: 15, away: 14 },
     ];
     expect(analyzeSets(sets)).toMatchObject({
       complete: true,
-      homeWins: 3,
-      awayWins: 2,
+      homeWins: 2,
+      awayWins: 1,
     });
   });
-  it("3세트 선승", () =>
+  it("2세트 선승", () =>
     expect(analyzeSets(score())).toMatchObject({
       complete: true,
-      homeWins: 3,
+      homeWins: 2,
       awayWins: 0,
     }));
-  it("3세트 이후 추가 점수 거부", () => {
+  it("2세트 이후 추가 점수 거부", () => {
     const s = score();
-    s[3] = { home: 25, away: 20 };
+    s[2] = { home: 15, away: 10 };
     expect(analyzeSets(s).complete).toBe(false);
   });
   it("건너뛴 세트 거부", () =>
     expect(
-      analyzeSets([emptySets()[0], { home: 25, away: 20 }]).errors.join(),
+      analyzeSets([emptySets()[0], { home: 15, away: 10 }]).errors.join(),
     ).toContain("순서"));
   it("미완료 경기 확정 불가", () =>
     expect(() =>
       planMatchUpdate(createInitialData(), "g-A-1", emptySets(), "confirm"),
     ).toThrow());
   it("양쪽 점수 필요", () =>
-    expect(analyzeSets([{ home: 25, away: "" }]).errors.length).toBe(1));
+    expect(analyzeSets([{ home: 15, away: "" }]).errors.length).toBe(1));
   it("변경된 목표 점수 사용", () =>
-    expect(
-      analyzeSets([{ home: 21, away: 19 }], [21, 21, 21, 21, 11]).errors,
-    ).toEqual([]));
+    expect(analyzeSets([{ home: 21, away: 19 }], [21, 21, 21]).errors).toEqual(
+      [],
+    ));
 });
 describe("대진과 순위", () => {
   it("초기 9경기와 중복 없는 6개 예선", () => {
@@ -113,8 +111,8 @@ describe("대진과 순위", () => {
     expect(rank(d).rows[0]).toMatchObject({
       played: 1,
       wins: 1,
-      setDiff: 3,
-      pointDiff: 15,
+      setDiff: 2,
+      pointDiff: "10",
     });
   });
   it("한 조만 끝나면 결선 배정하지 않음", () => {
@@ -175,37 +173,35 @@ describe("대진과 순위", () => {
   });
   it("승수/득실 동률일 때 상대 전적 적용", () => {
     let d = createInitialData();
+    d = planMatchUpdate(d, "g-A-1", score(), "confirm").data;
     d = planMatchUpdate(
       d,
-      "g-A-1",
+      "g-A-2",
       [
-        { home: 25, away: 20 },
-        { home: 20, away: 25 },
-        { home: 25, away: 20 },
-        { home: 20, away: 25 },
-        { home: 15, away: 10 },
+        { home: 1, away: 15 },
+        { home: 1, away: 15 },
+        { home: "", away: "" },
       ],
       "confirm",
     ).data;
-    d = planMatchUpdate(d, "g-A-2", score(false), "confirm").data;
     d = planMatchUpdate(
       d,
       "g-A-3",
       [
-        { home: 25, away: 20 },
-        { home: 20, away: 25 },
-        { home: 25, away: 20 },
-        { home: 25, away: 20 },
+        { home: 15, away: 5 },
+        { home: 15, away: 5 },
         { home: "", away: "" },
       ],
       "confirm",
     ).data;
     const result = rank(d);
     expect(
-      result.rows.slice(0, 2).map((r) => [r.wins, r.setDiff, r.pointDiff]),
+      result.rows
+        .slice(0, 2)
+        .map((r) => [r.matchPoints, r.wins, r.setsFor, r.setsAgainst]),
     ).toEqual([
-      [1, 1, 5],
-      [1, 1, 5],
+      [3, 1, 2, 2],
+      [3, 1, 2, 2],
     ]);
     expect(result.rows.map((r) => r.team.id)).toEqual([
       "team-2",
@@ -248,7 +244,7 @@ describe("기록 수정과 무결성", () => {
   it("진출팀 변화 없는 점수 수정은 결선 보존", () => {
     const d = createDemoData();
     const s = score();
-    s[0].away = 21;
+    s[0].away = 11;
     const p = planMatchUpdate(d, "g-A-1", s, "confirm");
     expect(p.affected).toEqual([]);
     expect(p.data.matches.find((m) => m.id === "final").status).toBe(
@@ -293,13 +289,13 @@ describe("기록 수정과 무결성", () => {
     ).toThrow());
   it("규칙 변경 후에도 확정 경기 당시 규칙 유지", () => {
     const d = createDemoData();
-    d.tournament.setRules = [21, 21, 21, 21, 11];
+    d.tournament.setRules = [21, 21, 21];
     expect(validateData(d)).toBe(d);
     expect(syncBracket(d).affected).toEqual([]);
   });
   it("중복 경기와 잘못된 확정 점수 거부", () => {
     const d = createDemoData();
-    d.matches[0].sets[0] = { home: 26, away: 24 };
+    d.matches[0].sets[0] = { home: 16, away: 14 };
     expect(() => validateData(d)).toThrow();
     const b = createInitialData();
     b.matches[1].homeTeamId = b.matches[0].homeTeamId;

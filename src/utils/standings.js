@@ -1,4 +1,5 @@
 import { matchResult as confirmedResult } from "./sportRules";
+import { compareRatio, matchPoints } from "./competitionRules";
 export function calculateStandings(
   teams,
   matches,
@@ -18,6 +19,10 @@ export function calculateStandings(
       setsAgainst: 0,
       pointsFor: 0,
       pointsAgainst: 0,
+      matchPoints: 0,
+      remainingDiff: 0,
+      exactFor: 0n,
+      exactAgainst: 0n,
     }));
   const valid = matches.filter(
     (m) =>
@@ -34,6 +39,8 @@ export function calculateStandings(
     h.setsAgainst += r.awayWins;
     a.setsFor += r.awayWins;
     a.setsAgainst += r.homeWins;
+    h.matchPoints += matchPoints(r.homeWins, r.awayWins);
+    a.matchPoints += matchPoints(r.awayWins, r.homeWins);
     if (r.winnerTeamId === h.team.id) {
       h.wins++;
       a.losses++;
@@ -43,20 +50,38 @@ export function calculateStandings(
     }
     (m.sets || []).forEach((s) => {
       if (s.home === "" || s.away === "") return;
-      h.pointsFor += s.home;
-      h.pointsAgainst += s.away;
-      a.pointsFor += s.away;
-      a.pointsAgainst += s.home;
+      h.exactFor += BigInt(s.home);
+      h.exactAgainst += BigInt(s.away);
+      a.exactFor += BigInt(s.away);
+      a.exactAgainst += BigInt(s.home);
     });
+    (m.rounds || [])
+      .filter((s) => s.winner !== null)
+      .forEach((s) => {
+        h.remainingDiff += s.homeRemaining - s.awayRemaining;
+        a.remainingDiff += s.awayRemaining - s.homeRemaining;
+      });
   });
   rows.forEach((r) => {
     r.setDiff = r.setsFor - r.setsAgainst;
-    r.pointDiff = r.pointsFor - r.pointsAgainst;
+    r.pointsFor = r.exactFor.toString();
+    r.pointsAgainst = r.exactAgainst.toString();
+    r.pointDiff = (r.exactFor - r.exactAgainst).toString();
+    delete r.exactFor;
+    delete r.exactAgainst;
   });
   const compare = (a, b) =>
+    b.matchPoints - a.matchPoints ||
     b.wins - a.wins ||
-    b.setDiff - a.setDiff ||
-    (dodgeball ? 0 : b.pointDiff - a.pointDiff);
+    compareRatio(b.setsFor, b.setsAgainst, a.setsFor, a.setsAgainst) ||
+    (dodgeball
+      ? b.remainingDiff - a.remainingDiff
+      : compareRatio(
+          b.pointsFor,
+          b.pointsAgainst,
+          a.pointsFor,
+          a.pointsAgainst,
+        ));
   rows.sort(compare);
   const ties = [];
   for (let i = 0; i < rows.length; ) {
@@ -67,6 +92,7 @@ export function calculateStandings(
       const ids = tied.map((r) => r.team.id);
       const headWins = Object.fromEntries(ids.map((id) => [id, 0]));
       valid
+        .filter(() => ids.length === 2)
         .filter((m) => ids.includes(m.homeTeamId) && ids.includes(m.awayTeamId))
         .forEach((m) => headWins[m.winnerTeamId]++);
       tied.sort((a, b) => headWins[b.team.id] - headWins[a.team.id]);

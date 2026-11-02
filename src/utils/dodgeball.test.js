@@ -1,3 +1,4 @@
+import { roundResults, roundResult } from "./testResults";
 import { describe, it, expect } from "vitest";
 import { createInitialData } from "../data/initialTournament";
 import {
@@ -9,20 +10,16 @@ import {
 import { analyzeRounds, changeRound, emptyRounds } from "./dodgeballRules";
 import { calculateStandings } from "./standings";
 import { syncBracket } from "./bracketLogic";
-const rounds = (sequence) =>
-  [...sequence]
-    .map((winner) => ({ winner }))
-    .concat(emptyRounds())
-    .slice(0, 5);
+const rounds = roundResults;
 const standings = (d, g = "A", manual = []) =>
   calculateStandings(d.teams, d.matches, g, null, manual);
 describe("피구 판 결과와 배구 분리", () => {
   it.each([
-    [["home", "home", "home"], 3, 0],
-    [["home", "away", "home", "home"], 3, 1],
-    [["home", "away", "home", "away", "home"], 3, 2],
-    [["away", "home", "away", "home", "away"], 2, 3],
-  ])("정상 3승 종료 %j", (sequence, h, a) => {
+    [["home", "home"], 2, 0],
+    [["home", "away", "home"], 2, 1],
+    [["home", "away", "home"], 2, 1],
+    [["away", "home", "away"], 1, 2],
+  ])("정상 2승 종료 %j", (sequence, h, a) => {
     expect(analyzeRounds(rounds(sequence))).toMatchObject({
       complete: true,
       homeWins: h,
@@ -30,20 +27,25 @@ describe("피구 판 결과와 배구 분리", () => {
       errors: [],
     });
   });
-  it.each([["home", "home", "home", "away"], [null, "home"], ["draw"], [5]])(
+  it.each([["home", "home", "away"], [null, "home"], ["draw"], [5]])(
     "잘못된 결과 거부 %j",
     (...args) => {
       // Vitest spreads nested array parameters; each case is a sequence.
       expect(analyzeRounds(rounds(args))).not.toMatchObject({ errors: [] });
     },
   );
-  it("앞 판 변경은 이후 입력 제거, 3승 이후 직접 변경 거부", () => {
-    const original = rounds(["home", "away", "home", "home"]);
-    expect(changeRound(original, 1, "home")).toEqual(rounds(["home", "home"]));
+  it("앞 판 변경은 이후 입력 제거, 2승 이후 직접 변경 거부", () => {
+    const original = rounds(["home", "away", "home"]);
+    const changed = changeRound(original, 1, { homeRemaining: 8 });
+    expect(changed[2]).toEqual(original[2]);
+    expect(analyzeRounds(changed).draftErrors.length).toBeGreaterThan(0);
     expect(() =>
-      changeRound(rounds(["home", "home", "home"]), 3, "away"),
+      changeRound(rounds(["home", "home"]), 2, { winner: "away" }),
     ).toThrow();
-    expect(changeRound(original, 0, null)).toEqual(emptyRounds());
+    expect(
+      changeRound(original, 0, { homeRemaining: null, awayRemaining: null })[0]
+        .winner,
+    ).toBeNull();
   });
   it("임시 결과는 순위에 제외, 미완료 확정 거부", () => {
     const d = createInitialData("dodgeball");
@@ -55,24 +57,19 @@ describe("피구 판 결과와 배구 분리", () => {
     ).data;
     expect(standings(draft).rows.every((r) => r.played === 0)).toBe(true);
     expect(() =>
-      planMatchUpdate(d, "g-A-1", rounds(["home", "home"]), "confirm"),
+      planMatchUpdate(d, "g-A-1", rounds(["home"]), "confirm"),
     ).toThrow();
     expect(() =>
-      planMatchUpdate(
-        d,
-        "g-A-1",
-        rounds(["home", "home", "home", "away"]),
-        "draft",
-      ),
+      planMatchUpdate(d, "g-A-1", rounds(["home", "home", "away"]), "draft"),
     ).toThrow();
   });
   it("판 득실 계산, 6경기 완료 후 준결승과 결승 자동 배정", () => {
     const d = createDemoData("dodgeball");
     expect(validateData(d)).toBe(d);
     expect(standings(d).rows.map((r) => [r.wins, r.setDiff])).toEqual([
-      [2, 6],
+      [2, 4],
       [1, 0],
-      [0, -6],
+      [0, -4],
     ]);
     expect(d.matches.find((m) => m.id === "sf-1")).toMatchObject({
       homeTeamId: "team-1",
@@ -84,29 +81,29 @@ describe("피구 판 결과와 배구 분리", () => {
       winnerTeamId: "team-1",
     });
     expect(
-      d.matches.every((m) => m.sets === undefined && m.rounds.length === 5),
+      d.matches.every((m) => m.sets === undefined && m.rounds.length === 3),
     ).toBe(true);
   });
   it("한 조만 완료되면 결선 배정하지 않음", () => {
     let d = createInitialData("dodgeball");
     for (const id of ["g-A-1", "g-A-2", "g-A-3"])
-      d = planMatchUpdate(
-        d,
-        id,
-        rounds(["home", "home", "home"]),
-        "confirm",
-      ).data;
+      d = planMatchUpdate(d, id, rounds(["home", "home"]), "confirm").data;
     expect(d.matches.find((m) => m.id === "sf-1").homeTeamId).toBeNull();
   });
   it("2팀 승수·판득실 동률은 직접 맞대결로 해결", () => {
     let d = createInitialData("dodgeball");
     // 1 beats 2 3:2, 3 beats 1 3:0, 2 beats 3 3:0 => team 2 and 3 tie (+2).
-    for (const [id, seq] of [
-      ["g-A-1", ["home", "away", "home", "away", "home"]],
-      ["g-A-2", ["away", "away", "away"]],
-      ["g-A-3", ["home", "home", "home"]],
+    for (const [id, w, margin] of [
+      ["g-A-1", "home", 1],
+      ["g-A-2", "away", 3],
+      ["g-A-3", "home", 2],
     ])
-      d = planMatchUpdate(d, id, rounds(seq), "confirm").data;
+      d = planMatchUpdate(
+        d,
+        id,
+        [roundResult(w, margin), roundResult(w, margin), roundResult(null)],
+        "confirm",
+      ).data;
     expect(standings(d).rows.map((r) => r.team.id)).toEqual([
       "team-2",
       "team-3",
@@ -120,7 +117,7 @@ describe("피구 판 결과와 배구 분리", () => {
       d = planMatchUpdate(
         d,
         m.id,
-        rounds(Array(3).fill(m.id === "g-A-2" ? "away" : "home")),
+        rounds(Array(2).fill(m.id === "g-A-2" ? "away" : "home")),
         "confirm",
       ).data;
     expect(standings(d).ties).toHaveLength(1);
@@ -145,7 +142,7 @@ describe("피구 판 결과와 배구 분리", () => {
     const plan = planMatchUpdate(
       d,
       "g-A-1",
-      rounds(["away", "away", "away"]),
+      rounds(["away", "away"]),
       "confirm",
     );
     expect(plan.affected).toEqual(

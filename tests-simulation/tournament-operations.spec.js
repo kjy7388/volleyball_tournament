@@ -1,3 +1,5 @@
+import { fillRound, makeRosterSpace } from "../tests/resultHelpers.js";
+import { roundResult } from "../src/utils/testResults.js";
 import { test, expect, login } from "../tests/fixtures.js";
 import { createInitialData } from "../src/data/initialTournament.js";
 import { planMatchUpdate } from "../src/services/tournamentStorage.js";
@@ -19,16 +21,12 @@ async function editor(page, number) {
 async function enterResult(page, sport, number, winner = "home") {
   const dialog = await editor(page, number);
   if (sport === "volleyball")
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < 2; i++) {
       const inputs = dialog.locator(".score-input-row").nth(i).locator("input");
-      await inputs.nth(0).fill(winner === "home" ? "25" : "20");
-      await inputs.nth(1).fill(winner === "home" ? "20" : "25");
+      await inputs.nth(0).fill(winner === "home" ? "15" : "10");
+      await inputs.nth(1).fill(winner === "home" ? "10" : "15");
     }
-  else
-    for (let i = 1; i <= 3; i++)
-      await dialog
-        .getByLabel(`${i}판 승리 반`, { exact: true })
-        .selectOption(winner);
+  else for (let i = 1; i <= 2; i++) await fillRound(dialog, i, winner);
   await dialog
     .getByRole("button", { name: "경기 결과 확정", exact: true })
     .click();
@@ -174,12 +172,12 @@ for (const sport of sports) {
     let d = createInitialData(sport);
     for (const match of d.matches.filter((m) => m.stage === "group")) {
       const side = match.id === "g-A-2" ? "away" : "home";
-      const result = Array.from({ length: 5 }, (_, i) =>
+      const result = Array.from({ length: 3 }, (_, i) =>
         sport === "dodgeball"
-          ? { winner: i < 3 ? side : null }
+          ? { ...roundResult(i < 2 ? side : null) }
           : {
-              home: i < 3 ? (side === "home" ? 25 : 20) : "",
-              away: i < 3 ? (side === "away" ? 25 : 20) : "",
+              home: i < 2 ? (side === "home" ? 15 : 10) : "",
+              away: i < 2 ? (side === "away" ? 15 : 10) : "",
             },
       );
       d = planMatchUpdate(d, match.id, result, "confirm").data;
@@ -221,6 +219,10 @@ for (const sport of sports) {
     const card = page.locator(".team-editor").first();
     await card.getByLabel("반 이름", { exact: true }).fill("검증반");
     await card.locator(".player-input input").first().fill("수정선수");
+    await expect(
+      card.getByRole("button", { name: "선수 추가", exact: true }),
+    ).toBeDisabled();
+    await makeRosterSpace(page, card);
     await card.getByRole("button", { name: "선수 추가", exact: true }).click();
     await card.locator(".player-input input").last().fill("추가선수");
     await page
@@ -230,7 +232,7 @@ for (const sport of sports) {
     await expect(page.locator(".toast")).toContainText("저장");
     let current = await backend.snapshot(`${sport}-cup`);
     expect(current.teams[0].name).toBe("검증반");
-    expect(current.teams[0].players).toHaveLength(9);
+    expect(current.teams[0].players).toHaveLength(10);
     await card
       .getByRole("button", { name: "추가선수 삭제", exact: true })
       .click();
@@ -271,7 +273,7 @@ for (const sport of sports) {
     current = await backend.snapshot(`${sport}-cup`);
     expect(current.teams.filter((t) => t.group === "A")).toHaveLength(3);
     expect(getMatch(current, "g-A-1").homeTeamId).toBe("team-2");
-    expect(current.teams[0].players).toHaveLength(8);
+    expect(current.teams[0].players).toHaveLength(9);
     await page.goto(`/admin/${sport}/settings`);
     await page.getByLabel("시작일", { exact: true }).fill("2026-11-24");
     await page.getByLabel("종료일", { exact: true }).fill("2026-12-14");

@@ -18,11 +18,9 @@ async function openScoreConfirmation(page) {
   await page.locator(".match-card").first().click();
   const editor = page.locator("dialog").first();
   const scores = [
-    [25, 20],
-    [20, 25],
-    [25, 22],
-    [23, 25],
-    [15, 12],
+    [15, 10],
+    [10, 15],
+    [15, 13],
   ];
   for (let i = 0; i < scores.length; i++) {
     const inputs = editor.locator(".score-input-row").nth(i).locator("input");
@@ -42,7 +40,7 @@ async function wheelScrolls(page) {
     .poll(() => page.evaluate(() => window.scrollY))
     .toBeGreaterThan(100);
 }
-test("5세트 결과 저장으로 두 모달이 동시에 닫혀도 스크롤 복원", async ({
+test("3세트 결과 저장으로 두 모달이 동시에 닫혀도 스크롤 복원", async ({
   page,
   backend,
 }) => {
@@ -290,14 +288,14 @@ async function swipeUp(session, x, startY, endY) {
       type: "touchMove",
       touchPoints: [{ x, y: startY + ((endY - startY) * step) / 8, id: 1 }],
     });
-    await new Promise((resolve) => setTimeout(resolve, 20));
+    await new Promise((resolve) => setTimeout(resolve, 10));
   }
   await session.send("Input.dispatchTouchEvent", {
     type: "touchEnd",
     touchPoints: [],
   });
 }
-test("모바일 터치: 모달 내부 스크롤과 5세트 확정 후 배경 스와이프 복원", async ({
+test("모바일 터치: 모달 내부 스크롤과 3세트 확정 후 배경 스와이프 복원", async ({
   browser,
   backend,
 }) => {

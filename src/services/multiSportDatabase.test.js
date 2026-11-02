@@ -1,3 +1,5 @@
+import { roundResults, roundResult } from "../utils/testResults";
+import { createInitialData as legacyInitial } from "./legacyTestData";
 import { beforeAll, afterAll, it, expect } from "vitest";
 import { PGlite } from "@electric-sql/pglite";
 import { readFileSync } from "node:fs";
@@ -44,7 +46,7 @@ beforeAll(async () => {
     `insert into public.tournament_admins(user_id) values('${admin}')`,
   );
   await as();
-  legacy = await save(createDemoData(), true);
+  legacy = await save(legacyInitial(), true);
   await as("postgres", "");
   await db.exec(sql("002_multi_sport_tournament.sql"));
   await db.exec(sql("003_volleyball_no_deuce.sql"));
@@ -91,6 +93,9 @@ it("001 데이터가 있는 DB에 002 적용 후 원본 경기·선수·Revision
   await db.exec(sql("002_multi_sport_tournament.sql"));
   await as();
   expect((await load("volleyball-cup")).revision).toBe(legacy.revision);
+  await as("postgres", "");
+  await db.exec(sql("004_three_set_points_and_survivors.sql"));
+  await as();
 });
 it("피구 최초 1회 생성, 별도 하위 테이블 사용 및 중복 생성 거부", async () => {
   const d = await save(createInitialData("dodgeball"), true);
@@ -118,7 +123,7 @@ it("피구 최초 1회 생성, 별도 하위 테이블 사용 및 중복 생성 
         )
       ).rows[0].n,
     ),
-  ).toBe(45);
+  ).toBe(27);
   await as();
 });
 it("종목별 revision 독립: 양쪽 저장 요청을 함께 제출해도 서로 충돌하지 않음", async () => {
@@ -154,7 +159,7 @@ it("피구 9경기 결과 서버 검증, 결선 배정, 우승과 배구 선수�
   );
   expect(await load("volleyball-cup")).toEqual(before);
 });
-it("잘못된 피구 판, 중간 공백, 3승 이후 입력, 점수 혼입, 위조 승자 서버 거부", async () => {
+it("잘못된 피구 판, 중간 공백, 2승 이후 입력, 점수 혼입, 위조 승자 서버 거부", async () => {
   const original = await load();
   for (const mutate of [
     (d) => {
@@ -164,7 +169,7 @@ it("잘못된 피구 판, 중간 공백, 3승 이후 입력, 점수 혼입, 위�
       d.matches[0].rounds[0].winner = null;
     },
     (d) => {
-      d.matches[0].rounds[3].winner = "away";
+      d.matches[0].rounds[2] = roundResult("away");
     },
     (d) => {
       d.matches[0].sets = [];
@@ -198,7 +203,7 @@ it("완료되지 않은 피구 결과는 확정 거부, 임시 저장은 결선 
   d = planMatchUpdate(
     d,
     "g-A-1",
-    [{ winner: "home" }, ...emptyRounds().slice(1)],
+    [roundResult("home"), ...emptyRounds().slice(1)],
     "draft",
   ).data;
   const saved = await save(d);
@@ -217,12 +222,7 @@ it("피구 결선 기록 수정은 ACK 없이 차단하고 명시적 확인 후�
   const plan = planMatchUpdate(
     await load(),
     "g-A-1",
-    [
-      { winner: "away" },
-      { winner: "away" },
-      { winner: "away" },
-      ...emptyRounds().slice(3),
-    ],
+    [roundResult("away"), roundResult("away"), ...emptyRounds().slice(2)],
     "confirm",
   );
   await expect(save(plan.data)).rejects.toThrow("ACK_REQUIRED");
@@ -239,10 +239,20 @@ it("피구 두 팀의 승수·판 득실 동률은 서버에서도 직접 맞대
     "g-A-3": ["home", "home", "home"],
   };
   for (const match of d.matches.filter((m) => m.stage === "group")) {
-    const winners = outcomes[match.id] || ["home", "home", "home"];
-    const rounds = Array.from({ length: 5 }, (_, i) => ({
-      winner: winners[i] || null,
-    }));
+    const w = match.id === "g-A-2" ? "away" : "home",
+      margin =
+        match.id === "g-A-1"
+          ? 1
+          : match.id === "g-A-2"
+            ? 3
+            : match.id === "g-A-3"
+              ? 2
+              : 4;
+    const rounds = [
+      roundResult(w, margin),
+      roundResult(w, margin),
+      roundResult(null),
+    ];
     d = planMatchUpdate(d, match.id, rounds, "confirm").data;
   }
   const saved = await save(
@@ -267,9 +277,7 @@ it("피구 순환 동률 수동 지정 전 결선 금지, 지정 후 서버·클
     d = planMatchUpdate(
       d,
       match.id,
-      Array.from({ length: 5 }, (_, i) => ({
-        winner: i < 3 ? (match.id === "g-A-2" ? "away" : "home") : null,
-      })),
+      roundResults(Array(2).fill(match.id === "g-A-2" ? "away" : "home")),
       "confirm",
     ).data;
   d = await save(

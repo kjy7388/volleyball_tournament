@@ -1,3 +1,4 @@
+import { makeRosterSpace } from "./resultHelpers.js";
 import { test, expect, login } from "./fixtures.js";
 test.beforeEach(async ({ page, backend }) => {
   await login(page);
@@ -13,16 +14,16 @@ async function saveScore(page, number, home = true) {
     })
     .click();
   const dialog = page.locator("dialog").first();
-  for (let i = 1; i <= 3; i++) {
+  for (let i = 1; i <= 2; i++) {
     const inputs = dialog
       .locator(".score-input-row")
       .nth(i - 1)
       .locator("input");
-    await inputs.nth(0).fill(home ? "25" : "20");
-    await inputs.nth(1).fill(home ? "20" : "25");
+    await inputs.nth(0).fill(home ? "15" : "10");
+    await inputs.nth(1).fill(home ? "10" : "15");
   }
   await expect(
-    dialog.locator(".score-input-row").nth(3).locator("input").first(),
+    dialog.locator(".score-input-row").nth(2).locator("input").first(),
   ).toBeDisabled();
   await dialog.getByRole("button", { name: "경기 결과 확정" }).click();
   await page
@@ -66,13 +67,13 @@ test("유효하지 않은 점수는 확정 불가 / 임시 저장은 순위에�
   await page.locator(".match-card").first().click();
   const d = page.locator("dialog");
   const first = d.locator(".score-input-row").first().locator("input");
-  await first.nth(0).fill("26");
-  await first.nth(1).fill("24");
+  await first.nth(0).fill("16");
+  await first.nth(1).fill("14");
   await expect(
     d.getByRole("button", { name: "경기 결과 확정" }),
   ).toBeDisabled();
   await expect(d.locator(".validation-errors")).toContainText("목표");
-  await first.nth(0).fill("24");
+  await first.nth(0).fill("14");
   await d.getByRole("button", { name: "임시 저장", exact: true }).click();
   await page.goto("/groups");
   await expect(
@@ -90,10 +91,10 @@ test("데모 적용, 이전 경기 수정 경고와 결선 기록 초기화", as
   await page.goto("/admin/matches");
   await page.locator(".match-card").first().click();
   const editor = page.locator("dialog").first();
-  for (let i = 0; i < 3; i++) {
+  for (let i = 0; i < 2; i++) {
     const inputs = editor.locator(".score-input-row").nth(i).locator("input");
-    await inputs.nth(0).fill("20");
-    await inputs.nth(1).fill("25");
+    await inputs.nth(0).fill("10");
+    await inputs.nth(1).fill("15");
   }
   await editor.getByRole("button", { name: "경기 결과 확정" }).click();
   const confirmation = page.locator("dialog").last();
@@ -119,6 +120,8 @@ test("반 이름·선수 추가/수정/삭제와 조 편성 검증", async ({
   await page.goto("/admin/teams");
   const card = page.locator(".team-editor").first();
   await card.getByLabel("반 이름").fill("테스트반");
+  await expect(card.getByRole("button", { name: "선수 추가" })).toBeDisabled();
+  await makeRosterSpace(page, card);
   await card.getByRole("button", { name: "선수 추가" }).click();
   await card.locator(".player-input input").last().fill("새 선수");
   await page.getByRole("button", { name: "변경 사항 저장" }).first().click();
@@ -154,6 +157,7 @@ test("반 이름·선수 추가/수정/삭제와 조 편성 검증", async ({
 });
 test("설정 변경과 일정 필터 및 상세 결과", async ({ page, backend }) => {
   await page.goto("/admin/settings");
+  await expect(page.locator(".competition-rules")).toContainText("2:0 승리 3점");
   await page.getByLabel("대회명", { exact: true }).fill("우리 학교 배구대회");
   await page.getByLabel("시작일").fill("2026-11-24");
   await page.getByLabel("종료일").fill("2026-12-14");

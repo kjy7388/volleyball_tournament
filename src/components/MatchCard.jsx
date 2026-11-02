@@ -118,6 +118,13 @@ export function MatchDetail({ match, onClose }) {
       ) : (
         <>
           <div className="set-results">
+            <p className="muted">
+              {match.rounds
+                ? "3판 2선승제 · 판당 10분 · 잔여 인원 기록"
+                : match.stage === "group"
+                  ? "3세트 2선승제 · 조별리그 듀스 없음"
+                  : "3세트 2선승제 · 준결승·결승 듀스 적용(2점 차)"}
+            </p>
             <div className="set-row set-head">
               <span>{match.rounds ? "판" : "세트"}</span>
               <strong>{teamLabel(data, match, "home")}</strong>
@@ -142,10 +149,12 @@ export function MatchDetail({ match, onClose }) {
                 >
                   {match.rounds
                     ? s.winner === "home"
-                      ? "승리"
+                      ? `승리 · ${s.homeRemaining}명${s.manualWinner ? " · 관리자 지정" : ""}`
                       : s.winner === "away"
-                        ? "패배"
-                        : "미진행"
+                        ? `패배 · ${s.homeRemaining}명`
+                        : s.homeRemaining !== null || s.awayRemaining !== null
+                          ? "승부 미결정"
+                          : "미진행"
                     : s.home === ""
                       ? "–"
                       : s.home}
@@ -163,10 +172,12 @@ export function MatchDetail({ match, onClose }) {
                 >
                   {match.rounds
                     ? s.winner === "away"
-                      ? "승리"
+                      ? `승리 · ${s.awayRemaining}명${s.manualWinner ? " · 관리자 지정" : ""}`
                       : s.winner === "home"
-                        ? "패배"
-                        : "미진행"
+                        ? `패배 · ${s.awayRemaining}명`
+                        : s.homeRemaining !== null || s.awayRemaining !== null
+                          ? "승부 미결정"
+                          : "미진행"
                     : s.away === ""
                       ? "–"
                       : s.away}

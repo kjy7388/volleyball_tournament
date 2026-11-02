@@ -1,3 +1,4 @@
+import GroupStandings from "../components/GroupStandings";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
@@ -102,6 +103,14 @@ export default function AdminDashboard() {
             })}
           </div>
         </section>
+      </div>
+      <div className="notice">
+        선수 정원: {data.teams.filter((t) => t.players.length === 10).length} /
+        6개 반 충족 · 반별 10명
+      </div>
+      <div className="two-columns">
+        <GroupStandings group="A" />
+        <GroupStandings group="B" />
       </div>
       <SectionTitle
         title="최근 입력한 경기 결과"

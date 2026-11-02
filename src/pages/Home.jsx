@@ -1,3 +1,4 @@
+import CompetitionRuleNotice from "../components/CompetitionRuleNotice";
 import { Link } from "react-router-dom";
 import {
   ArrowUpRight,
@@ -126,6 +127,7 @@ export default function Home() {
           </span>
         </div>
       </section>
+      <CompetitionRuleNotice dodgeball={sport.key === "dodgeball"} />
       <Stats
         items={[
           {

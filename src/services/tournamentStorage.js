@@ -13,7 +13,7 @@ export const STORAGE_KEY = "volleyball-cup:data:v1";
 export function validateData(d) {
   if (!d || d.schemaVersion !== SCHEMA_VERSION)
     throw new Error(
-      "저장 데이터 버전을 지원하지 않습니다. 원본을 백업한 뒤 초기화해주세요.",
+      "저장 데이터 버전을 지원하지 않습니다. 원본을 보존하고 004 전환 절차를 확인해주세요. 자동 변환하거나 초기화하지 않습니다.",
     );
   const dodgeball = sportOf(d) === "dodgeball";
   if (
@@ -27,7 +27,7 @@ export function validateData(d) {
     !d.tournament ||
     (!dodgeball &&
       (!Array.isArray(d.tournament.setRules) ||
-        d.tournament.setRules.length !== 5 ||
+        d.tournament.setRules.length !== 3 ||
         d.tournament.setRules.some(
           (n) => !Number.isInteger(n) || n < 2 || n > 999,
         ))) ||
@@ -50,6 +50,7 @@ export function validateData(d) {
         !t.name?.trim() ||
         !["A", "B"].includes(t.group) ||
         !Array.isArray(t.players) ||
+        t.players.length > 10 ||
         t.players.some((p) => !p.id || !p.name?.trim() || p.teamId !== t.id),
     )
   )
@@ -99,7 +100,7 @@ export function validateData(d) {
       !["scheduled", "live", "completed"].includes(m.status) ||
       (!dodgeball &&
         (!Array.isArray(m.sets) ||
-          m.sets.length !== 5 ||
+          m.sets.length !== 3 ||
           m.sets.some(
             (s) =>
               !s ||
@@ -109,9 +110,9 @@ export function validateData(d) {
           ))) ||
       (dodgeball &&
         (!Array.isArray(m.rounds) ||
-          m.rounds.length !== 5 ||
+          m.rounds.length !== 3 ||
           m.sets !== undefined ||
-          analyzeRounds(m.rounds).errors.length > 0)) ||
+          analyzeRounds(m.rounds).draftErrors.length > 0)) ||
       (!dodgeball && m.rounds !== undefined) ||
       [m.homeTeamId, m.awayTeamId].some(
         (id) => id !== null && !ids.includes(id),
@@ -131,13 +132,14 @@ export function validateData(d) {
       if (
         m.rulesSnapshot != null &&
         (!Array.isArray(m.rulesSnapshot) ||
-          m.rulesSnapshot.length !== 5 ||
+          m.rulesSnapshot.length !== 3 ||
           m.rulesSnapshot.some((n) => !Number.isInteger(n) || n < 2 || n > 999))
       )
         throw new Error("경기 목표 점수 기록이 올바르지 않습니다.");
       const analysis = analyzeSets(
         m.sets,
         m.rulesSnapshot || d.tournament.setRules,
+        m.stage,
       );
       if (analysis.draftErrors.length) throw new Error(analysis.draftErrors[0]);
       if (m.status === "scheduled" && hasResultInput(m))
@@ -146,12 +148,16 @@ export function validateData(d) {
     if (m.status === "completed") {
       const r = dodgeball
         ? analyzeRounds(m.rounds)
-        : analyzeSets(m.sets, m.rulesSnapshot || d.tournament.setRules);
+        : analyzeSets(
+            m.sets,
+            m.rulesSnapshot || d.tournament.setRules,
+            m.stage,
+          );
       if (
         !r.complete ||
         !m.homeTeamId ||
         !m.awayTeamId ||
-        m.winnerTeamId !== (r.homeWins === 3 ? m.homeTeamId : m.awayTeamId)
+        m.winnerTeamId !== (r.homeWins === 2 ? m.homeTeamId : m.awayTeamId)
       )
         throw new Error("확정 경기 점수에 오류가 있습니다.");
     } else if (m.winnerTeamId)
@@ -212,7 +218,7 @@ export function planMatchUpdate(data, id, sets, mode) {
   if (
     !["confirm", "draft"].includes(mode) ||
     !Array.isArray(sets) ||
-    sets.length !== 5
+    sets.length !== 3
   )
     throw new Error("경기 입력 형식이 올바르지 않습니다.");
   const next = structuredClone(data);
@@ -238,14 +244,15 @@ export function planMatchUpdate(data, id, sets, mode) {
   const rules = m.rulesSnapshot || next.tournament.setRules;
   const result = dodgeball
     ? analyzeRounds(normalized)
-    : analyzeSets(normalized, rules);
+    : analyzeSets(normalized, rules, m.stage);
   if (!dodgeball && result.draftErrors.length)
     throw new Error(result.draftErrors[0]);
-  if (dodgeball && result.errors.length) throw new Error(result.errors[0]);
+  if (dodgeball && result.draftErrors.length)
+    throw new Error(result.draftErrors[0]);
   if (mode === "confirm" && !result.complete)
     throw new Error(
       result.errors[0] ||
-        `먼저 3${dodgeball ? "판" : "세트"}를 승리해야 결과를 확정할 수 있습니다.`,
+        `먼저 2${dodgeball ? "판" : "세트"}를 승리해야 결과를 확정할 수 있습니다.`,
     );
   // Drafts may hold incomplete sets, but never scores after a completed match.
   if (mode !== "confirm" && result.errors.some((e) => e.includes("추가 세트")))
@@ -255,7 +262,7 @@ export function planMatchUpdate(data, id, sets, mode) {
     status: mode === "confirm" ? "completed" : "live",
     winnerTeamId:
       mode === "confirm"
-        ? result.homeWins === 3
+        ? result.homeWins === 2
           ? m.homeTeamId
           : m.awayTeamId
         : null,
@@ -275,6 +282,8 @@ export function planTeamsUpdate(data, teams) {
     throw new Error("서로 다른 반 이름 6개를 입력해주세요.");
   if (["A", "B"].some((g) => teams.filter((t) => t.group === g).length !== 3))
     throw new Error("A·B조에 각각 3개 반을 배정해주세요.");
+  if (teams.some((t) => t.players.length > 10))
+    throw new Error("선수 정원은 반별 10명입니다.");
   if (teams.some((t) => t.players.some((p) => !p.name.trim())))
     throw new Error("빈 선수 이름을 입력하거나 저장할 수 없습니다.");
   const next = structuredClone(data);
@@ -331,13 +340,18 @@ export function createDemoData(sport = "volleyball") {
     .map((m) => m.id)
     .forEach((id, i) => {
       const sets = sport === "dodgeball" ? emptyRounds() : emptySets();
-      for (let j = 0; j < 3; j++)
+      for (let j = 0; j < 2; j++)
         sets[j] =
           sport === "dodgeball"
-            ? { winner: "home" }
+            ? {
+                winner: "home",
+                homeRemaining: 7,
+                awayRemaining: 3,
+                manualWinner: false,
+              }
             : winners[i]
-              ? { home: 25, away: 18 + j }
-              : { home: 18, away: 25 };
+              ? { home: 15, away: 10 + j }
+              : { home: 10, away: 15 };
       d = planMatchUpdate(d, id, sets, "confirm").data;
     });
   return d;

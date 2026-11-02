@@ -1,4 +1,5 @@
 import { useState } from "react";
+import CompetitionRuleNotice from "../components/CompetitionRuleNotice";
 import {
   Save,
   CheckCircle2,
@@ -74,24 +75,26 @@ function ScoreEditor({ match, onClose }) {
   const [plan, setPlan] = useState(null);
   const [base] = useState(data);
   const rules = match.rulesSnapshot || data.tournament.setRules;
-  const result = dodgeball ? analyzeRounds(sets) : analyzeSets(sets, rules);
+  const result = dodgeball
+    ? analyzeRounds(sets)
+    : analyzeSets(sets, rules, match.stage);
   const ready = match.homeTeamId && match.awayTeamId;
   const terminalAt = (() => {
-    if (dodgeball) return 4;
+    if (dodgeball) return 2;
     let h = 0;
     let a = 0;
     for (let i = 0; i < sets.length; i++) {
-      const r = analyzeSets(sets.slice(0, i + 1), rules);
+      const r = analyzeSets(sets.slice(0, i + 1), rules, match.stage);
       h = r.homeWins;
       a = r.awayWins;
-      if (h === 3 || a === 3) return i;
+      if (h === 2 || a === 2) return i;
     }
-    return 4;
+    return 2;
   })();
   const change = (index, side, raw) => {
     if (raw !== "" && !/^\d+$/.test(raw)) return;
     const n = raw === "" ? "" : Number(raw);
-    if (n !== "" && (!Number.isSafeInteger(n) || n > 9999)) return;
+    if (n !== "" && !Number.isSafeInteger(n)) return;
     setSets((old) =>
       old.map((s, i) => (i === index ? { ...s, [side]: n } : s)),
     );
@@ -149,6 +152,7 @@ function ScoreEditor({ match, onClose }) {
           </div>
         ) : (
           <>
+            <CompetitionRuleNotice dodgeball={dodgeball} stage={match.stage} />
             <div className="editor-score">
               <strong>{teamLabel(data, match, "home")}</strong>
               <div>
@@ -194,7 +198,7 @@ function ScoreEditor({ match, onClose }) {
                   {teamLabel(
                     data,
                     match,
-                    result.homeWins === 3 ? "home" : "away",
+                    result.homeWins === 2 ? "home" : "away",
                   )}{" "}
                   승리
                 </strong>
@@ -205,13 +209,13 @@ function ScoreEditor({ match, onClose }) {
             )}
             <p className="muted small-text">
               {dodgeball
-                ? "먼저 3판 승리 · 미진행 판은 승리 반을 선택하지 않습니다."
-                : "듀스 없음 · 목표 점수 선취(1점 차 허용) · 먼저 3세트 승리. 진행 중인 점수는 임시 저장할 수 있습니다."}
+                ? "판당 10분 · 잔여 인원 0~10명 · 먼저 2판 승리. 동률은 별도 승자 지정이 필요합니다."
+                : "3세트 2선승제 · 조별리그 듀스 없음 · 준결승·결승 2점 차 듀스. 진행 중 점수는 임시 저장할 수 있습니다."}
             </p>
             <div className="modal-actions">
               <button
                 className="button secondary"
-                disabled={!dodgeball && result.draftErrors.length > 0}
+                disabled={result.draftErrors.length > 0}
                 onClick={() => save("draft")}
               >
                 <Save size={17} />
@@ -238,7 +242,7 @@ function ScoreEditor({ match, onClose }) {
           }
           description={
             plan.mode === "confirm"
-              ? `${teamLabel(data, match, result.homeWins === 3 ? "home" : "away")}의 ${Math.max(result.homeWins, result.awayWins)}:${Math.min(result.homeWins, result.awayWins)} 승리로 확정합니다. 변경된 순위와 진출 반이 반영됩니다.`
+              ? `${teamLabel(data, match, result.homeWins === 2 ? "home" : "away")}의 ${Math.max(result.homeWins, result.awayWins)}:${Math.min(result.homeWins, result.awayWins)} 승리로 확정합니다. 변경된 순위와 진출 반이 반영됩니다.`
               : "이 경기의 확정 결과와 승자가 해제되고 순위에서 제외됩니다."
           }
           affected={plan.affected.map(

@@ -3485,6 +3485,54 @@ td:last-child {
 }
 
 /* Stack the mobile logo and copy on the same full-width center axis. */
+.round-survivors {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px;
+  margin: 14px 0;
+  min-width: 0;
+}
+.round-survivors legend {
+  padding: 0 6px;
+  font-weight: 700;
+}
+.standing-points {
+  color: var(--blue);
+  background: #eff5ff;
+  font-size: 16px;
+}
+.standing-mobile-details {
+  display: none;
+}
+@media (max-width: 600px) {
+  .standings .standing-extra {
+    display: none;
+  }
+  .standing-mobile-details {
+    display: block;
+    margin-top: 8px;
+    font-size: 10px;
+    white-space: normal;
+  }
+  .standing-mobile-details dl {
+    min-width: 75px;
+    margin: 8px 0;
+  }
+  .standing-mobile-details dl div {
+    display: flex;
+    justify-content: space-between;
+    gap: 5px;
+  }
+  .standing-mobile-details dd {
+    margin: 0;
+    overflow-wrap: anywhere;
+  }
+  .standings th,
+  .standings td {
+    padding-left: 5px;
+    padding-right: 5px;
+  }
+}
 @media (max-width: 600px) {
   .header-inner .brand {
     width: 100%;

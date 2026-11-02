@@ -52,7 +52,8 @@ export async function monitor(context, page) {
         SPORTS.some((sport) => id === `${sport}-cup`);
       const getVersion =
         u.pathname === "/rest/v1/rpc/get_sports_schema_version" ||
-        u.pathname === "/rest/v1/rpc/get_volleyball_scoring_version";
+        u.pathname === "/rest/v1/rpc/get_volleyball_scoring_version" ||
+        u.pathname === "/rest/v1/rpc/get_competition_format_version";
       if (["GET", "POST"].includes(method) && (getSnapshot || getVersion)) {
         const header = request.headers().apikey;
         if (header?.startsWith("sb_publishable_")) publicKey = header;
