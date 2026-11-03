@@ -144,6 +144,14 @@ export function validateData(d) {
       if (m.status === "scheduled" && hasResultInput(m))
         throw new Error("예정 경기에 점수가 입력되어 있습니다.");
     }
+    if (
+      dodgeball &&
+      (m.rulesSnapshot != null ||
+        (m.status === "scheduled" && hasResultInput(m)))
+    )
+      throw new Error(
+        "피구 경기 상태 또는 잔여 인원 기록이 올바르지 않습니다.",
+      );
     if (m.status === "completed") {
       const r = dodgeball
         ? analyzeRounds(m.rounds)
@@ -156,7 +164,10 @@ export function validateData(d) {
         !r.complete ||
         !m.homeTeamId ||
         !m.awayTeamId ||
-        m.winnerTeamId !== (r.homeWins === 2 ? m.homeTeamId : m.awayTeamId)
+        m.winnerTeamId !==
+          ((dodgeball ? r.winnerSide === "home" : r.homeWins === 2)
+            ? m.homeTeamId
+            : m.awayTeamId)
       )
         throw new Error("확정 경기 점수에 오류가 있습니다.");
     } else if (m.winnerTeamId)
@@ -251,7 +262,9 @@ export function planMatchUpdate(data, id, sets, mode) {
   if (mode === "confirm" && !result.complete)
     throw new Error(
       result.errors[0] ||
-        `먼저 2${dodgeball ? "판" : "세트"}를 승리해야 결과를 확정할 수 있습니다.`,
+        (dodgeball
+          ? "1·2세트 합산 잔여 인원과 필요한 3세트 승자를 확인해주세요."
+          : "먼저 2세트를 승리해야 결과를 확정할 수 있습니다."),
     );
   // Drafts may hold incomplete sets, but never scores after a completed match.
   if (mode !== "confirm" && result.errors.some((e) => e.includes("추가 세트")))
@@ -261,7 +274,7 @@ export function planMatchUpdate(data, id, sets, mode) {
     status: mode === "confirm" ? "completed" : "live",
     winnerTeamId:
       mode === "confirm"
-        ? result.homeWins === 2
+        ? (dodgeball ? result.winnerSide === "home" : result.homeWins === 2)
           ? m.homeTeamId
           : m.awayTeamId
         : null,

@@ -316,6 +316,7 @@ test("모바일 터치: 모달 내부 스크롤과 3세트 확정 후 배경 스
     await page.locator("dialog").evaluate((dialog) => {
       dialog.scrollTop = 0;
     });
+    await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
     const lockedPosition = await page.evaluate(() => window.scrollY);
     await swipeUp(session, 195, 570, 240);
     await expect

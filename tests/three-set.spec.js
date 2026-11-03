@@ -61,20 +61,20 @@ test("피구 잔여 인원·동률 수동 지정·2:1 승점·모달 스크롤 �
   await page.goto("/admin/dodgeball/matches");
   const d = await openMatch(page);
   await fillRound(d, 1, "home");
-  await fillRound(d, 2, "home", 5, 5);
+  await fillRound(d, 2, "away", 3, 7);
+  await fillRound(d, 3, "home", 5, 5);
   await expect(d).toContainText("승부 미결정");
   await expect(
     d.getByRole("button", { name: "경기 결과 확정", exact: true }),
   ).toBeDisabled();
-  await d.getByLabel("2판 승리 반", { exact: true }).selectOption("away");
-  await fillRound(d, 3, "home");
+  await d.getByLabel("3세트 동률 최종 경기 승리 반", { exact: true }).selectOption("home");
   await d.screenshot({ path: "test-results/three-set-dodgeball-editor.png" });
   await confirm(page);
   const saved = (await backend.snapshot("dodgeball-cup")).matches[0];
-  expect(saved.rounds[1]).toMatchObject({
+  expect(saved.rounds[2]).toMatchObject({
     homeRemaining: 5,
     awayRemaining: 5,
-    winner: "away",
+    winner: "home",
     manualWinner: true,
   });
   expect(saved.winnerTeamId).toBe("team-1");

@@ -199,7 +199,7 @@ test("피구 9경기 확정→순위→준결승→결승→우승, 다른 브�
     const dialog = await openMatch(page, number);
     for (let i = 1; i <= 3; i++)
       await fillRound(dialog, i, i % 2 === 1 ? "home" : "away");
-    await expect(dialog.locator(".editor-score")).toContainText("판 스코어");
+    await expect(dialog.locator(".editor-score")).toContainText("합산 잔여 인원");
     await confirm(page);
     expect(
       await page.evaluate(() => [
@@ -229,7 +229,7 @@ test("피구 9경기 확정→순위→준결승→결승→우승, 다른 브�
   await publicPage.goto("/dodgeball/bracket");
   await expect(publicPage.locator(".has-champion h3")).toHaveText("1반");
   await publicPage.locator(".match-card").last().click();
-  await expect(publicPage.locator("dialog .set-results")).toContainText("1판");
+  await expect(publicPage.locator("dialog .set-results")).toContainText("1세트");
   await expect(publicPage.locator("dialog .set-results")).toContainText("승리");
   await other.close();
 });
@@ -243,12 +243,10 @@ test("피구 앞 판 변경·2승 후 비활성·임시 저장·실패·취소·
   let dialog = await openMatch(page);
   for (let i = 1; i <= 2; i++) await fillRound(dialog, i, "home");
   await expect(
-    dialog.getByLabel("3판 승리 반", { exact: true }),
+    dialog.getByLabel("3세트 1반 잔여 인원", { exact: true }),
   ).toBeDisabled();
   await fillRound(dialog, 1, "away");
-  await expect(dialog.getByLabel("2판 승리 반", { exact: true })).toHaveValue(
-    "home",
-  );
+  await expect(dialog.getByLabel("2세트 1반 잔여 인원", { exact: true })).toHaveValue("7");
   await expect(
     dialog.getByRole("button", { name: "경기 결과 확정" }),
   ).toBeDisabled();

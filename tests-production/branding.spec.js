@@ -124,28 +124,34 @@ smoke(
       ).replace(/\s+/g, " ");
       check(
         rules.includes(
-          sport === "volleyball" ? "3세트 2선승제" : "3판 2선승제",
+          sport === "volleyball" ? "3세트 2선승제" : "피구 기본 2세트",
         ),
         "새 경기 방식 안내 누락",
       );
       check(
-        rules.includes("경기 운영 기준 10명") &&
-          rules.includes("등록 인원 제한 없음") &&
-          rules.includes("2:0 승리 3점") &&
-          rules.includes("2:1 승리 2점") &&
-          rules.includes("1:2 패배 1점") &&
-          rules.includes("0:2 패배 0점"),
+        rules.includes("등록 인원 제한 없음") &&
+          (sport === "dodgeball"
+            ? rules.includes("2세트 종료 승리 3점 / 패배 0점") &&
+              rules.includes("3세트 진행 후 승리 2점 / 패배 1점")
+            : rules.includes("경기 운영 기준 10명") &&
+              rules.includes("2:0 승리 3점") &&
+              rules.includes("2:1 승리 2점") &&
+              rules.includes("1:2 패배 1점") &&
+              rules.includes("0:2 패배 0점")),
         "정원 또는 승점 안내 누락",
       );
       check(
         sport === "volleyball"
           ? rules.includes("기본 모든 세트 15점") &&
               rules.includes("준결승·결승 2점 차 듀스")
-          : rules.includes("각 판 10분") && rules.includes("잔여 인원"),
+          : rules.includes("세트당 10분") && rules.includes("잔여 인원"),
         "종목별 세부 규칙 안내 누락",
       );
       await open(page, audit, "/" + sport + "/groups", ".standings");
-      await page.getByRole("button", { name: /상세 기록/ }).first().click();
+      await page
+        .getByRole("button", { name: /상세 기록/ })
+        .first()
+        .click();
       const details = page.getByRole("dialog");
       check(
         await details.getByText("승점", { exact: true }).isVisible(),
@@ -157,9 +163,12 @@ smoke(
       );
       check(
         await details
-          .getByText(sport === "volleyball" ? "점수 득실률" : "잔여 인원수 차", {
-            exact: true,
-          })
+          .getByText(
+            sport === "volleyball" ? "점수 득실률" : "잔여 인원수 차",
+            {
+              exact: true,
+            },
+          )
           .isVisible(),
         "모바일 종목별 상세 지표 누락",
       );

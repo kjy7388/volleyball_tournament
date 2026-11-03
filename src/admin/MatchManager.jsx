@@ -1,5 +1,6 @@
 import { useState } from "react";
 import CompetitionRuleNotice from "../components/CompetitionRuleNotice";
+import DodgeballSummary from "../components/DodgeballSummary";
 import {
   Save,
   CheckCircle2,
@@ -78,6 +79,9 @@ function ScoreEditor({ match, onClose }) {
   const result = dodgeball
     ? analyzeRounds(sets)
     : analyzeSets(sets, rules, match.stage);
+  const homeWon = dodgeball
+    ? result.winnerSide === "home"
+    : result.homeWins === 2;
   const ready = match.homeTeamId && match.awayTeamId;
   const terminalAt = (() => {
     if (dodgeball) return 2;
@@ -156,10 +160,10 @@ function ScoreEditor({ match, onClose }) {
             <div className="editor-score">
               <strong>{teamLabel(data, match, "home")}</strong>
               <div>
-                <b>{result.homeWins}</b>
+                <b>{dodgeball ? result.homeTotal : result.homeWins}</b>
                 <span>:</span>
-                <b>{result.awayWins}</b>
-                <small>{dodgeball ? "판" : "세트"} 스코어</small>
+                <b>{dodgeball ? result.awayTotal : result.awayWins}</b>
+                <small>{dodgeball ? "합산 잔여 인원" : "세트 스코어"}</small>
               </div>
               <strong>{teamLabel(data, match, "away")}</strong>
             </div>
@@ -170,6 +174,14 @@ function ScoreEditor({ match, onClose }) {
                 기록을 확인 후 초기화합니다. 임시 저장 시 이 경기는 순위에서
                 제외됩니다.
               </div>
+            )}
+            {dodgeball && (
+              <DodgeballSummary
+                result={result}
+                home={teamLabel(data, match, "home")}
+                away={teamLabel(data, match, "away")}
+                stage={match.stage}
+              />
             )}
             {dodgeball ? (
               <DodgeballRoundEditor
@@ -195,21 +207,18 @@ function ScoreEditor({ match, onClose }) {
               <div className="result-preview">
                 <CheckCircle2 size={20} />
                 <strong>
-                  {teamLabel(
-                    data,
-                    match,
-                    result.homeWins === 2 ? "home" : "away",
-                  )}{" "}
-                  승리
+                  {teamLabel(data, match, homeWon ? "home" : "away")} 승리
                 </strong>
                 <span>
-                  {result.homeWins}:{result.awayWins}
+                  {dodgeball
+                    ? `${result.roundsPlayed}세트 종료`
+                    : `${result.homeWins}:${result.awayWins}`}
                 </span>
               </div>
             )}
             <p className="muted small-text">
               {dodgeball
-                ? "판당 10분 · 잔여 인원 0~10명 · 먼저 2판 승리. 동률은 별도 승자 지정이 필요합니다."
+                ? "기본 2세트 합산 잔여 인원으로 승리 반 결정 · 합계 동점 시에만 3세트 · 3세트 동률은 최종 경기 승리 반 수동 확정."
                 : "3세트 2선승제 · 조별리그 듀스 없음 · 준결승·결승 2점 차 듀스. 진행 중 점수는 임시 저장할 수 있습니다."}
             </p>
             <div className="modal-actions">
@@ -242,7 +251,7 @@ function ScoreEditor({ match, onClose }) {
           }
           description={
             plan.mode === "confirm"
-              ? `${teamLabel(data, match, result.homeWins === 2 ? "home" : "away")}의 ${Math.max(result.homeWins, result.awayWins)}:${Math.min(result.homeWins, result.awayWins)} 승리로 확정합니다. 변경된 순위와 진출 반이 반영됩니다.`
+              ? `${teamLabel(data, match, homeWon ? "home" : "away")}의 ${dodgeball ? `${result.roundsPlayed}세트 종료 · 합산 잔여 인원 ${result.homeTotal}:${result.awayTotal}` : `${Math.max(result.homeWins, result.awayWins)}:${Math.min(result.homeWins, result.awayWins)}`} 승리로 확정합니다. 변경된 순위와 진출 반이 반영됩니다.`
               : "이 경기의 확정 결과와 승자가 해제되고 순위에서 제외됩니다."
           }
           affected={plan.affected.map(

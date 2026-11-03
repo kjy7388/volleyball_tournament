@@ -61,7 +61,7 @@ it("ratio cross multiplication, undefeated and unrecorded are separate", () => {
   expect(formatRatio(2, 0)).toBe("무패");
   expect(formatRatio(2, 3)).toBe("0.667");
 });
-it("dodgeball survivor automatic winner, ties require explicit manual record", () => {
+it("dodgeball aggregate winner, first-two draw stays a draw", () => {
   let rounds = emptyRounds();
   rounds = changeRound(rounds, 0, { homeRemaining: 7 });
   rounds = changeRound(rounds, 0, { awayRemaining: 3 });
@@ -69,16 +69,16 @@ it("dodgeball survivor automatic winner, ties require explicit manual record", (
   rounds[1] = round(5, 5);
   expect(analyzeRounds(rounds)).toMatchObject({
     homeWins: 1,
-    complete: false,
+    complete: true,
     draftErrors: [],
   });
-  rounds = changeRound(rounds, 1, { winner: "home" });
+  rounds = changeRound(rounds, 1, { homeRemaining: 6 });
   expect(analyzeRounds(rounds).complete).toBe(true);
-  expect(rounds[1].manualWinner).toBe(true);
+  expect(rounds[1].manualWinner).toBe(false);
   rounds[2] = round(5, 1);
   expect(analyzeRounds(rounds).draftErrors.length).toBeGreaterThan(0);
 });
-it.each([-1, 11, 1.5, "7"])("survivor %s rejected", (n) =>
+it.each([-1, Infinity, 1.5, "7"])("survivor %s rejected", (n) =>
   expect(analyzeRounds([round(n, 3)]).draftErrors.length).toBeGreaterThan(0),
 );
 it("revised earlier round preserves later input and reports contradictions", () => {

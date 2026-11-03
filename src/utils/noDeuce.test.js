@@ -102,13 +102,13 @@ it("피구 저장은 배구 003 확인과 무관함", async () => {
     calls.push(name);
     return {
       data:
-        name === "get_competition_format_version" ? 4 : { ...d, revision: 1 },
+        name === "get_dodgeball_scoring_version" ? 6 : name === "get_competition_format_version" ? 4 : { ...d, revision: 1 },
     };
   };
   await createSupabaseRepository({ rpc }, "dodgeball-cup").save(d, {
     initialize: true,
   });
-  expect(calls).toEqual(["get_competition_format_version", "save_tournament"]);
+  expect(calls).toEqual(["get_dodgeball_scoring_version", "get_competition_format_version", "save_tournament"]);
 });
 it("003 미적용 또는 알 수 없는 버전은 배구 쓰기 전에 차단", async () => {
   for (const response of [{ error: { code: "PGRST202" } }, { data: 2 }]) {

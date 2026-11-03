@@ -63,6 +63,7 @@ export const test = base.extend({
           "utf8",
         ),
       );
+      await db.exec(readFileSync(new URL("../supabase/migrations/006_dodgeball_aggregate_survivors.sql", import.meta.url), "utf8"));
       await db.exec(
         `insert into public.tournament_admins(user_id) values('${adminId}');`,
       );
@@ -182,6 +183,8 @@ export const test = base.extend({
             try {
               const value = await serial(async () => {
                 await role(uid);
+                if (name === "get_dodgeball_scoring_version")
+                  return (await db.query("select public.get_dodgeball_scoring_version() data")).rows[0].data;
                 if (name === "get_roster_registration_version")
                   return (
                     await db.query(

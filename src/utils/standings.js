@@ -23,6 +23,7 @@ export function calculateStandings(
       remainingDiff: 0,
       exactFor: 0n,
       exactAgainst: 0n,
+      exactRemaining: 0n,
     }));
   const valid = matches.filter(
     (m) =>
@@ -39,8 +40,12 @@ export function calculateStandings(
     h.setsAgainst += r.awayWins;
     a.setsFor += r.awayWins;
     a.setsAgainst += r.homeWins;
-    h.matchPoints += matchPoints(r.homeWins, r.awayWins);
-    a.matchPoints += matchPoints(r.awayWins, r.homeWins);
+    h.matchPoints += dodgeball
+      ? r.homeMatchPoints
+      : matchPoints(r.homeWins, r.awayWins);
+    a.matchPoints += dodgeball
+      ? r.awayMatchPoints
+      : matchPoints(r.awayWins, r.homeWins);
     if (r.winnerTeamId === h.team.id) {
       h.wins++;
       a.losses++;
@@ -56,10 +61,11 @@ export function calculateStandings(
       a.exactAgainst += BigInt(s.home);
     });
     (m.rounds || [])
-      .filter((s) => s.winner !== null)
+      .filter((s) => s.homeRemaining !== null && s.awayRemaining !== null)
       .forEach((s) => {
-        h.remainingDiff += s.homeRemaining - s.awayRemaining;
-        a.remainingDiff += s.awayRemaining - s.homeRemaining;
+        const difference = BigInt(s.homeRemaining) - BigInt(s.awayRemaining);
+        h.exactRemaining += difference;
+        a.exactRemaining -= difference;
       });
   });
   rows.forEach((r) => {
@@ -67,6 +73,12 @@ export function calculateStandings(
     r.pointsFor = r.exactFor.toString();
     r.pointsAgainst = r.exactAgainst.toString();
     r.pointDiff = (r.exactFor - r.exactAgainst).toString();
+    r.remainingDiff =
+      r.exactRemaining <= BigInt(Number.MAX_SAFE_INTEGER) &&
+      r.exactRemaining >= BigInt(Number.MIN_SAFE_INTEGER)
+        ? Number(r.exactRemaining)
+        : r.exactRemaining.toString();
+    delete r.exactRemaining;
     delete r.exactFor;
     delete r.exactAgainst;
   });
@@ -75,7 +87,11 @@ export function calculateStandings(
     b.wins - a.wins ||
     compareRatio(b.setsFor, b.setsAgainst, a.setsFor, a.setsAgainst) ||
     (dodgeball
-      ? b.remainingDiff - a.remainingDiff
+      ? BigInt(b.remainingDiff) > BigInt(a.remainingDiff)
+        ? 1
+        : BigInt(b.remainingDiff) < BigInt(a.remainingDiff)
+          ? -1
+          : 0
       : compareRatio(
           b.pointsFor,
           b.pointsAgainst,

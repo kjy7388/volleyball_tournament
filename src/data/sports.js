@@ -13,7 +13,7 @@ export const SPORTS = {
     label: "피구",
     icon: "🔴",
     name: "DODGEBALL CUP",
-    unit: "판",
+    unit: "세트",
   },
 };
 export function sportFromPath(path) {

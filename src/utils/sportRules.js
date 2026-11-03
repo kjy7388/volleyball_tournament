@@ -16,7 +16,7 @@ export function matchResult(match, rules) {
     return null;
   const result = analyzeRounds(match.rounds);
   const winnerTeamId =
-    result.homeWins === 2 ? match.homeTeamId : match.awayTeamId;
+    result.winnerSide === "home" ? match.homeTeamId : match.awayTeamId;
   return result.complete && match.winnerTeamId === winnerTeamId
     ? { ...result, winnerTeamId }
     : null;

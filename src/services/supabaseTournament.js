@@ -33,7 +33,18 @@ export function createSupabaseRepository(client, tournamentId = TOURNAMENT_ID) {
   let supported = false;
   let unlimitedRosterReady = false;
   let volleyballScoringReady = false;
+  let dodgeballScoringReady = false;
   const formatCheck = async () => {
+    if (tournamentId === "dodgeball-cup" && !dodgeballScoringReady) {
+      const version = await client.rpc("get_dodgeball_scoring_version");
+      if (version.error && !["42883", "PGRST202"].includes(version.error.code))
+        throw dataError(version.error);
+      if (version.error || version.data !== 6)
+        throw new Error(
+          "피구 합산 잔여 인원 규칙에는 006_dodgeball_aggregate_survivors.sql 적용이 필요합니다. 기존 기록은 삭제하거나 자동 변환하지 말고 백업·호환성 확인 후 적용해주세요.",
+        );
+      dodgeballScoringReady = true;
+    }
     if (volleyballScoringReady) return;
     const c = await client.rpc("get_competition_format_version");
     if (c.error && !["42883", "PGRST202"].includes(c.error.code))

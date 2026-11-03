@@ -15,6 +15,8 @@ import {
 } from "../utils/display";
 import ScoreBoard from "./ScoreBoard";
 import Modal from "./Modal";
+import DodgeballSummary from "./DodgeballSummary";
+import { analyzeRounds } from "../utils/dodgeballRules";
 export function StatusBadge({ status }) {
   return (
     <span className={`badge status-${status}`}>
@@ -120,13 +122,13 @@ export function MatchDetail({ match, onClose }) {
           <div className="set-results">
             <p className="muted">
               {match.rounds
-                ? "3판 2선승제 · 판당 10분 · 잔여 인원 기록"
+                ? "기본 2세트 · 세트당 10분(6분·7분 단축 가능) · 합계 동점 시 3세트"
                 : match.stage === "group"
                   ? "3세트 2선승제 · 조별리그 듀스 없음"
                   : "3세트 2선승제 · 준결승·결승 듀스 적용(2점 차)"}
             </p>
             <div className="set-row set-head">
-              <span>{match.rounds ? "판" : "세트"}</span>
+              <span>세트</span>
               <strong>{teamLabel(data, match, "home")}</strong>
               <strong>{teamLabel(data, match, "away")}</strong>
             </div>
@@ -134,13 +136,14 @@ export function MatchDetail({ match, onClose }) {
               <div className="set-row" key={i}>
                 <span>
                   {i + 1}
-                  {match.rounds ? "판" : "세트"}
+                  세트
                 </span>
                 <b
                   className={
                     (
                       match.rounds
-                        ? s.winner === "home"
+                        ? s.winner === "home" &&
+                          s.homeRemaining !== s.awayRemaining
                         : s.home !== "" && s.home > s.away
                     )
                       ? "blue"
@@ -148,13 +151,16 @@ export function MatchDetail({ match, onClose }) {
                   }
                 >
                   {match.rounds
-                    ? s.winner === "home"
-                      ? `승리 · ${s.homeRemaining}명${s.manualWinner ? " · 관리자 지정" : ""}`
-                      : s.winner === "away"
-                        ? `패배 · ${s.homeRemaining}명`
-                        : s.homeRemaining !== null || s.awayRemaining !== null
-                          ? "승부 미결정"
-                          : "미진행"
+                    ? s.homeRemaining !== null &&
+                      s.homeRemaining === s.awayRemaining
+                      ? `세트 무승부 · ${s.homeRemaining}명${s.manualWinner ? " · 경기 승자 관리자 지정" : ""}`
+                      : s.winner === "home"
+                        ? `승리 · ${s.homeRemaining}명${s.manualWinner ? " · 관리자 지정" : ""}`
+                        : s.winner === "away"
+                          ? `패배 · ${s.homeRemaining}명`
+                          : s.homeRemaining !== null || s.awayRemaining !== null
+                            ? `입력 중 · ${s.homeRemaining ?? "–"}명`
+                            : "미진행"
                     : s.home === ""
                       ? "–"
                       : s.home}
@@ -163,7 +169,8 @@ export function MatchDetail({ match, onClose }) {
                   className={
                     (
                       match.rounds
-                        ? s.winner === "away"
+                        ? s.winner === "away" &&
+                          s.homeRemaining !== s.awayRemaining
                         : s.away !== "" && s.away > s.home
                     )
                       ? "blue"
@@ -171,13 +178,16 @@ export function MatchDetail({ match, onClose }) {
                   }
                 >
                   {match.rounds
-                    ? s.winner === "away"
-                      ? `승리 · ${s.awayRemaining}명${s.manualWinner ? " · 관리자 지정" : ""}`
-                      : s.winner === "home"
-                        ? `패배 · ${s.awayRemaining}명`
-                        : s.homeRemaining !== null || s.awayRemaining !== null
-                          ? "승부 미결정"
-                          : "미진행"
+                    ? s.awayRemaining !== null &&
+                      s.homeRemaining === s.awayRemaining
+                      ? `세트 무승부 · ${s.awayRemaining}명${s.manualWinner ? " · 경기 승자 관리자 지정" : ""}`
+                      : s.winner === "away"
+                        ? `승리 · ${s.awayRemaining}명${s.manualWinner ? " · 관리자 지정" : ""}`
+                        : s.winner === "home"
+                          ? `패배 · ${s.awayRemaining}명`
+                          : s.homeRemaining !== null || s.awayRemaining !== null
+                            ? `입력 중 · ${s.awayRemaining ?? "–"}명`
+                            : "미진행"
                     : s.away === ""
                       ? "–"
                       : s.away}
@@ -185,6 +195,14 @@ export function MatchDetail({ match, onClose }) {
               </div>
             ))}
           </div>
+          {match.rounds && (
+            <DodgeballSummary
+              result={analyzeRounds(match.rounds)}
+              home={teamLabel(data, match, "home")}
+              away={teamLabel(data, match, "away")}
+              stage={match.stage}
+            />
+          )}
           {match.status === "live" && (
             <p className="muted">
               임시 저장된 점수입니다. 순위에는 반영되지 않습니다.
