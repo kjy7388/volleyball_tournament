@@ -3,8 +3,7 @@ export const MAX_ROUNDS = 3;
 export const WINS_REQUIRED = 2;
 export const MATCH_PLAYER_COUNT = 10;
 export const DEFAULT_TARGETS = [15, 15, 15];
-export const usesDeuce = (stage = "group") =>
-  ["semifinal", "final"].includes(stage);
+export const usesDeuce = () => false;
 export function matchPoints(won, lost) {
   return won === 2 ? (lost === 0 ? 3 : 2) : lost === 2 && won === 1 ? 1 : 0;
 }

@@ -210,13 +210,15 @@ it("SDK keeps input and blocks 11+ save before 005, succeeds once capability ava
   let ready = false;
   const rpc = async (name) => {
     calls.push(name);
-    return name === "get_competition_format_version"
-      ? { data: 4 }
-      : name === "get_roster_registration_version"
-        ? ready
-          ? { data: 5 }
-          : { error: { code: "PGRST202" } }
-        : { data: { ...d, revision: 1 } };
+    return name === "get_volleyball_scoring_version"
+      ? { data: 7 }
+      : name === "get_competition_format_version"
+        ? { data: 4 }
+        : name === "get_roster_registration_version"
+          ? ready
+            ? { data: 5 }
+            : { error: { code: "PGRST202" } }
+          : { data: { ...d, revision: 1 } };
   };
   const repo = createSupabaseRepository({ rpc });
   await expect(repo.save(d)).rejects.toThrow(

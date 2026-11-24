@@ -19,7 +19,7 @@ export default function Groups() {
       </div>
       <div className="notice">
         {sport.key === "volleyball"
-          ? "전 경기 기본 15점 · 조별리그 듀스 없음(15:14 종료) · 준결승·결승 듀스 적용(15:14 미완료, 16:14 종료)."
+          ? "전 경기 기본 15점 · 조별리그·준결승·결승 모두 듀스 없음(15:14 종료, 16:14 거부)."
           : "세트당 10분(6분·7분 단축 가능) · 1·2세트 잔여 인원 합계로 승자 판정 · 합계 동점 시 3세트 · 3세트 동률은 최종 경기 승자 수동 확정."}
       </div>
       <div className="two-columns groups-columns">

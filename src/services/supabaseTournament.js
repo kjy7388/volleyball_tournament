@@ -34,7 +34,18 @@ export function createSupabaseRepository(client, tournamentId = TOURNAMENT_ID) {
   let unlimitedRosterReady = false;
   let volleyballScoringReady = false;
   let dodgeballScoringReady = false;
+  let allStageNoDeuceReady = false;
   const formatCheck = async () => {
+    if (tournamentId === "volleyball-cup" && !allStageNoDeuceReady) {
+      const version = await client.rpc("get_volleyball_scoring_version");
+      if (version.error && !["42883", "PGRST202"].includes(version.error.code))
+        throw dataError(version.error);
+      if (version.error || version.data !== 7)
+        throw new Error(
+          "007_volleyball_no_deuce_all_stages.sql 마이그레이션 적용이 필요합니다. 기존 기록을 보존하고 백업·사전 점검 후 승인된 절차로 적용해주세요.",
+        );
+      allStageNoDeuceReady = true;
+    }
     if (tournamentId === "dodgeball-cup" && !dodgeballScoringReady) {
       const version = await client.rpc("get_dodgeball_scoring_version");
       if (version.error && !["42883", "PGRST202"].includes(version.error.code))

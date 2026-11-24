@@ -1,9 +1,4 @@
-import {
-  DEFAULT_TARGETS,
-  MAX_ROUNDS,
-  WINS_REQUIRED,
-  usesDeuce,
-} from "./competitionRules";
+import { DEFAULT_TARGETS, MAX_ROUNDS, WINS_REQUIRED } from "./competitionRules";
 export const emptySets = () =>
   Array.from({ length: MAX_ROUNDS }, () => ({ home: "", away: "" }));
 export function analyzeSets(sets, rules = DEFAULT_TARGETS, stage = "group") {
@@ -57,35 +52,21 @@ export function analyzeSets(sets, rules = DEFAULT_TARGETS, stage = "group") {
     )
       return invalid(`${label}: 0 이상의 정수를 입력해주세요.`);
     if (
-      !usesDeuce(stage) &&
-      ((!blank(h) && h > target) ||
-        (!blank(a) && a > target) ||
-        (h === target && a === target))
+      (!blank(h) && h > target) ||
+      (!blank(a) && a > target) ||
+      (h === target && a === target)
     )
       return invalid(
-        `${label}: 조별리그는 목표 ${target}점 초과 또는 양 팀 도달이 불가능합니다.`,
+        `${label}: 목표 ${target}점 초과 또는 양 팀 동시 도달은 불가능합니다. 듀스는 적용하지 않습니다.`,
       );
     const high = Math.max(h, a),
       low = Math.min(h, a);
-    if (
-      usesDeuce(stage) &&
-      !blank(h) &&
-      !blank(a) &&
-      high > target &&
-      high - low > 2
-    )
-      return invalid(`${label}: 이미 종료된 듀스 점수를 초과했습니다.`);
-    const ended =
-      !blank(h) &&
-      !blank(a) &&
-      (usesDeuce(stage)
-        ? high >= target && high - low >= 2
-        : high === target && low < target);
+    const ended = !blank(h) && !blank(a) && high === target && low < target;
     if (!ended) {
       unfinished = true;
       setStates[index] = "in_progress";
       errors.push(
-        `${label}: 진행 중인 임시 점수입니다. ${usesDeuce(stage) ? `${target}점 이상, 2점 차 승리가 필요합니다.` : `한쪽만 목표 ${target}점에 도달해야 합니다.`}`,
+        `${label}: 진행 중인 임시 점수입니다. 한쪽만 목표 ${target}점에 도달해야 합니다.`,
       );
       return;
     }

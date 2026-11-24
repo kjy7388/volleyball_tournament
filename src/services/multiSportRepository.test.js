@@ -16,11 +16,13 @@ it("지원 버전 확인은 성공한 경우에만 캐시하고 실패 후 재�
           data:
             name === "get_dodgeball_scoring_version"
               ? 6
-              : name === "get_competition_format_version"
-                ? 4
-                : name === "get_sports_schema_version"
-                  ? 2
-                  : createInitialData("dodgeball"),
+              : name === "get_volleyball_scoring_version"
+                ? 7
+                : name === "get_competition_format_version"
+                  ? 4
+                  : name === "get_sports_schema_version"
+                    ? 2
+                    : createInitialData("dodgeball"),
         },
   );
   const repo = createSupabaseRepository({ rpc }, "dodgeball-cup");
@@ -38,11 +40,13 @@ it("피구 연결은 002 지원 확인 후 정확한 종목 ID로 조회", async
     data:
       name === "get_dodgeball_scoring_version"
         ? 6
-        : name === "get_competition_format_version"
-          ? 4
-          : name === "get_sports_schema_version"
-            ? 2
-            : d,
+        : name === "get_volleyball_scoring_version"
+          ? 7
+          : name === "get_competition_format_version"
+            ? 4
+            : name === "get_sports_schema_version"
+              ? 2
+              : d,
     error: null,
   }));
   expect(
@@ -64,11 +68,13 @@ it("다른 종목의 조회 응답과 백업 저장은 거부", async () => {
     data:
       name === "get_dodgeball_scoring_version"
         ? 6
-        : name === "get_competition_format_version"
-          ? 4
-          : name === "get_sports_schema_version"
-            ? 2
-            : createInitialData(),
+        : name === "get_volleyball_scoring_version"
+          ? 7
+          : name === "get_competition_format_version"
+            ? 4
+            : name === "get_sports_schema_version"
+              ? 2
+              : createInitialData(),
   }));
   const repo = createSupabaseRepository({ rpc }, "dodgeball-cup");
   await expect(repo.load()).rejects.toThrow("선택한 종목");

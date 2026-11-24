@@ -219,7 +219,7 @@ function ScoreEditor({ match, onClose }) {
             <p className="muted small-text">
               {dodgeball
                 ? "기본 2세트 합산 잔여 인원으로 승리 반 결정 · 합계 동점 시에만 3세트 · 3세트 동률은 최종 경기 승리 반 수동 확정."
-                : "3세트 2선승제 · 조별리그 듀스 없음 · 준결승·결승 2점 차 듀스. 진행 중 점수는 임시 저장할 수 있습니다."}
+                : "3세트 2선승제 · 조별리그·준결승·결승 모두 듀스 없음. 진행 중 점수는 임시 저장할 수 있습니다."}
             </p>
             <div className="modal-actions">
               <button

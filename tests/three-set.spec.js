@@ -25,7 +25,7 @@ async function confirm(page) {
     .click();
   await expect(page.locator("dialog")).toHaveCount(0);
 }
-test("배구 준결승 15:14 임시·16:14 확정과 결승 기록 보호", async ({
+test("배구 준결승 14:14 임시·16:14 거부·15:14 확정과 결승 기록 보존", async ({
   page,
   backend,
 }) => {
@@ -35,15 +35,20 @@ test("배구 준결승 15:14 임시·16:14 확정과 결승 기록 보호", asyn
   const d = await openMatch(page, 7);
   await expect(d.locator(".score-input-row")).toHaveCount(3);
   const first = d.locator(".score-input-row").first().locator("input");
+  await first.nth(0).fill("14");
   await first.nth(1).fill("14");
   await expect(
     d.getByRole("button", { name: "경기 결과 확정", exact: true }),
   ).toBeDisabled();
   await first.nth(0).fill("16");
+  await expect(
+    d.getByRole("button", { name: "경기 결과 확정", exact: true }),
+  ).toBeDisabled();
+  await first.nth(0).fill("15");
   await confirm(page);
   const saved = await backend.snapshot();
   expect(saved.matches.find((m) => m.id === "sf-1").sets[0]).toEqual({
-    home: 16,
+    home: 15,
     away: 14,
   });
   expect(saved.matches.find((m) => m.id === "final").status).toBe("completed");
@@ -67,7 +72,9 @@ test("피구 잔여 인원·동률 수동 지정·2:1 승점·모달 스크롤 �
   await expect(
     d.getByRole("button", { name: "경기 결과 확정", exact: true }),
   ).toBeDisabled();
-  await d.getByLabel("3세트 동률 최종 경기 승리 반", { exact: true }).selectOption("home");
+  await d
+    .getByLabel("3세트 동률 최종 경기 승리 반", { exact: true })
+    .selectOption("home");
   await d.screenshot({ path: "test-results/three-set-dodgeball-editor.png" });
   await confirm(page);
   const saved = (await backend.snapshot("dodgeball-cup")).matches[0];

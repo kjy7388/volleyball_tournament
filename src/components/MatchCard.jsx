@@ -125,7 +125,7 @@ export function MatchDetail({ match, onClose }) {
                 ? "기본 2세트 · 세트당 10분(6분·7분 단축 가능) · 합계 동점 시 3세트"
                 : match.stage === "group"
                   ? "3세트 2선승제 · 조별리그 듀스 없음"
-                  : "3세트 2선승제 · 준결승·결승 듀스 적용(2점 차)"}
+                  : "3세트 2선승제 · 준결승·결승 듀스 없음"}
             </p>
             <div className="set-row set-head">
               <span>세트</span>

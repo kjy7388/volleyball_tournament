@@ -121,7 +121,7 @@ it("003 미적용 또는 알 수 없는 버전은 배구 쓰기 전에 차단", 
       createSupabaseRepository({ rpc }).save(createInitialData(), {
         initialize: true,
       }),
-    ).rejects.toThrow("004_three_set_points_and_survivors");
-    expect(calls).toEqual(["get_competition_format_version"]);
+    ).rejects.toThrow("007_volleyball_no_deuce_all_stages");
+    expect(calls).toEqual(["get_volleyball_scoring_version"]);
   }
 });

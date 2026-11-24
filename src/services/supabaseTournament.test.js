@@ -40,7 +40,12 @@ describe("Supabase 구성·저장 어댑터", () => {
   });
   it("빈 DB를 localStorage나 초기 데이터로 대체하지 않음", async () => {
     const rpc = vi.fn(async (name) => ({
-      data: name === "get_competition_format_version" ? 4 : null,
+      data:
+        name === "get_volleyball_scoring_version"
+          ? 7
+          : name === "get_competition_format_version"
+            ? 4
+            : null,
       error: null,
     }));
     expect(await createSupabaseRepository({ rpc }).load()).toBeNull();
@@ -55,7 +60,12 @@ describe("Supabase 구성·저장 어댑터", () => {
     const initial = createInitialData();
     const response = { ...initial, revision: 7 };
     const rpc = vi.fn(async (name) => ({
-      data: name === "get_competition_format_version" ? 4 : response,
+      data:
+        name === "get_volleyball_scoring_version"
+          ? 7
+          : name === "get_competition_format_version"
+            ? 4
+            : response,
       error: null,
     }));
     const saved = await createSupabaseRepository({ rpc }).save(initial, {
@@ -75,7 +85,11 @@ describe("Supabase 구성·저장 어댑터", () => {
     const d = createInitialData();
     const rpc = vi.fn(async (name) => ({
       data:
-        name === "get_competition_format_version" ? 4 : { ...d, revision: 1 },
+        name === "get_volleyball_scoring_version"
+          ? 7
+          : name === "get_competition_format_version"
+            ? 4
+            : { ...d, revision: 1 },
     }));
     await createSupabaseRepository({ rpc }).save(d, { initialize: true });
     expect(rpc).toHaveBeenCalledWith(

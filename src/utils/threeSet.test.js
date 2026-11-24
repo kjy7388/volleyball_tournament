@@ -22,11 +22,11 @@ const round = (h, a, winner = null) => ({
 it.each([
   [15, 14, "group", true],
   [16, 14, "group", false],
-  [15, 14, "semifinal", false],
-  [16, 14, "semifinal", true],
-  [17, 15, "final", true],
+  [15, 14, "semifinal", true],
+  [16, 14, "semifinal", false],
+  [17, 15, "final", false],
   [16, 15, "final", false],
-  [10001, 9999, "final", true],
+  [10001, 9999, "final", false],
 ])("%s:%s %s completion=%s", (h, a, stage, complete) =>
   expect(analyzeSets(v(h, a), [15, 15, 15], stage).complete).toBe(complete),
 );

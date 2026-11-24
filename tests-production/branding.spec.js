@@ -2,11 +2,11 @@ import { smoke, check, open, SPORTS } from "./readOnly.js";
 
 const title = "화곡중학교 배구·피구 대진표";
 smoke(
-  "운영 배구 규칙 버전 4·통합 버전 2 Data API 조회",
+  "운영 배구 규칙 버전 7·통합 버전 2 Data API 조회",
   async ({ page, audit }) => {
     await open(page, audit, "/volleyball", ".hero");
     for (const [name, expected] of [
-      ["get_volleyball_scoring_version", 4],
+      ["get_volleyball_scoring_version", 7],
       ["get_competition_format_version", 4],
       ["get_sports_schema_version", 2],
       ["get_roster_registration_version", 5],
@@ -143,7 +143,7 @@ smoke(
       check(
         sport === "volleyball"
           ? rules.includes("기본 모든 세트 15점") &&
-              rules.includes("준결승·결승 2점 차 듀스")
+              rules.includes("조별리그·준결승·결승 모두 듀스 없음")
           : rules.includes("세트당 10분") && rules.includes("잔여 인원"),
         "종목별 세부 규칙 안내 누락",
       );
